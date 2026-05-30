@@ -1,10 +1,6 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+{
+  "name": "Pedrolingo",
+  "description": "Plataforma de aprendizado inteligente de idiomas com painéis interativos para Professores e Alunos, gerenciamento de cursos, atribuição de notas e um Co-Pilot de IA integrado.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
