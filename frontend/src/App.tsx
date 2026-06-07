@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { INITIAL_COURSES, INITIAL_SUBMISSIONS, INITIAL_ASSIGNMENTS } from './data';
+import React, { useState, useEffect } from 'react';
 import { Course, StudentSubmission, Student, Assignment } from './types';
 import TeacherDashboard from './components/TeacherDashboard';
 import StudentDashboard from './components/StudentDashboard';
@@ -12,9 +11,9 @@ import {
 
 export default function App() {
   // Global Shared States
-  const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
-  const [submissions, setSubmissions] = useState<StudentSubmission[]>(INITIAL_SUBMISSIONS);
-  const [assignments, setAssignments] = useState<Assignment[]>(INITIAL_ASSIGNMENTS);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [submissions, setSubmissions] = useState<StudentSubmission[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   // Portal Toggle
@@ -28,76 +27,150 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // State update handlers
-  const handleAddCourse = (newCourse: Course) => {
-    setCourses((prev) => [...prev, newCourse]);
-    triggerToast(`Turma "${newCourse.title}" criada com sucesso!`);
-  };
+  const loadAllData = async () => {
+    try {
+      const [coursesRes, submissionsRes, assignmentsRes] = await Promise.all([
+        fetch('/api/courses'),
+        fetch('/api/submissions'),
+        fetch('/api/assignments')
+      ]);
 
-  const handleGradeSubmission = (subId: string, score: number, feedback: string) => {
-    // 1. Update the submission
-    setSubmissions((prev) =>
-      prev.map((sub) =>
-        sub.id === subId ? { ...sub, graded: true, score, feedback } : sub
-      )
-    );
+      const [coursesPayload, submissionsPayload, assignmentsPayload] = await Promise.all([
+        coursesRes.json(),
+        submissionsRes.json(),
+        assignmentsRes.json()
+      ]);
 
-    // Find the submission to update corresponding student grade
-    const sub = submissions.find((s) => s.id === subId);
-    if (sub) {
-      setCourses((prevCourses) =>
-        prevCourses.map((c) => {
-          if (c.code === sub.courseCode) {
-            // Update student score
-            const updatedStudents = c.studentsList.map((stud) => {
-              if (stud.name === sub.studentName) {
-                // Approximate new average grade
-                const newGrade = Math.round((stud.grade + score) / 2);
-                return { ...stud, grade: newGrade, completedLessons: stud.completedLessons + 1 };
-              }
-              return stud;
-            });
-
-            // Re-calculate course average grade
-            const avgGradeNum = updatedStudents.reduce((acc, s) => acc + s.grade, 0) / (updatedStudents.length || 1);
-            let avgLabel = 'B+';
-            if (avgGradeNum >= 90) avgLabel = 'A-';
-            else if (avgGradeNum >= 85) avgLabel = 'B+';
-            else if (avgGradeNum >= 80) avgLabel = 'B';
-            else avgLabel = 'C';
-
-            return {
-              ...c,
-              studentsList: updatedStudents,
-              averageGrade: avgLabel
-            };
-          }
-          return c;
-        })
-      );
-      triggerToast(`Nota ${score}/100 atribuída para ${sub.studentName}!`);
+      if (coursesPayload.success) setCourses(coursesPayload.data);
+      if (submissionsPayload.success) setSubmissions(submissionsPayload.data);
+      if (assignmentsPayload.success) setAssignments(assignmentsPayload.data);
+    } catch (err) {
+      console.error('Error fetching academic data:', err);
     }
   };
 
-  const handleAddStudent = (courseId: string, student: Student) => {
-    setCourses((prev) =>
-      prev.map((c) => {
-        if (c.id === courseId) {
-          const newList = [...c.studentsList, student];
-          return {
-            ...c,
-            studentsCount: c.studentsCount + 1,
-            studentsList: newList
-          };
-        }
-        return c;
-      })
-    );
-    triggerToast(`Aluno "${student.name}" matriculado no curso!`);
+  useEffect(() => {
+    loadAllData();
+  }, []);
+
+  // State update handlers
+  const handleAddCourse = async (newCourse: Course) => {
+    try {
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCourse)
+      });
+      const res = await response.json();
+      if (res.success) {
+        await loadAllData();
+        triggerToast(`Turma "${newCourse.title}" criada com sucesso!`);
+      } else {
+        throw new Error(res.error || 'Erro ao criar turma');
+      }
+    } catch (e: any) {
+      console.error(e);
+      triggerToast(`Erro ao criar turma: ${e.message}`);
+    }
   };
 
-  const handleAddMaterialFromAI = (title: string, content: string) => {
-    triggerToast(`Material "${title}" adicionado com sucesso às lições!`);
+  const handleGradeSubmission = async (subId: string, score: number, feedback: string) => {
+    try {
+      const response = await fetch(`/api/submissions/${subId}/grade`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score, feedback })
+      });
+      const res = await response.json();
+      if (res.success) {
+        await loadAllData();
+        
+        // Also refresh selectedCourse if it matches the current course code
+        const sub = submissions.find((s) => s.id === subId);
+        if (sub && selectedCourse && selectedCourse.code === sub.courseCode) {
+          const coursesRes = await fetch('/api/courses');
+          const coursesPayload = await coursesRes.json();
+          if (coursesPayload.success && coursesPayload.data) {
+            const freshCourse = coursesPayload.data.find((c: Course) => c.code === sub.courseCode);
+            if (freshCourse) setSelectedCourse(freshCourse);
+          }
+        }
+        
+        triggerToast(`Nota ${score}/100 atribuída com sucesso!`);
+      } else {
+        throw new Error(res.error || 'Erro ao atribuir nota');
+      }
+    } catch (e: any) {
+      console.error(e);
+      triggerToast(`Erro ao atribuir nota: ${e.message}`);
+    }
+  };
+
+  const handleAddStudent = async (courseId: string, student: Student) => {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/students`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(student)
+      });
+      const res = await response.json();
+      if (res.success) {
+        await loadAllData();
+        
+        // Update selectedCourse if it was currently selected
+        if (selectedCourse && selectedCourse.id === courseId) {
+          const coursesRes = await fetch('/api/courses');
+          const coursesPayload = await coursesRes.json();
+          if (coursesPayload.success && coursesPayload.data) {
+            const freshCourse = coursesPayload.data.find((c: Course) => c.id === courseId);
+            if (freshCourse) setSelectedCourse(freshCourse);
+          }
+        }
+        
+        triggerToast(`Aluno "${student.name}" matriculado no curso!`);
+      } else {
+        throw new Error(res.error || 'Erro ao matricular aluno');
+      }
+    } catch (e: any) {
+      console.error(e);
+      triggerToast(`Erro ao matricular aluno: ${e.message}`);
+    }
+  };
+
+  const handleAddMaterialFromAI = async (title: string, content: string) => {
+    if (!selectedCourse) {
+      triggerToast('Selecione um curso no painel para vincular este material!');
+      return;
+    }
+
+    try {
+      const newAssignment = {
+        title,
+        courseId: selectedCourse.id,
+        courseCode: selectedCourse.code,
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+        type: 'essay',
+        maxScore: 100,
+        description: content
+      };
+
+      const response = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAssignment)
+      });
+      const res = await response.json();
+      
+      if (res.success) {
+        await loadAllData();
+        triggerToast(`Material "${title}" adicionado com sucesso às lições!`);
+      } else {
+        throw new Error(res.error);
+      }
+    } catch (e: any) {
+      console.error(e);
+      triggerToast(`Erro ao salvar material gerado pela IA.`);
+    }
   };
 
   return (

@@ -1,4 +1,48 @@
-import { Course, StudentSubmission, Assignment } from './types';
+export interface Student {
+  id: string;
+  name: string;
+  email: string;
+  grade: number;
+  attendance: number;
+  completedLessons: number;
+}
+
+export interface Course {
+  id: string;
+  code: string;
+  title: string;
+  language: string;
+  term: string;
+  studentsCount: number;
+  averageAttendance: number;
+  averageGrade: string;
+  studentsList: Student[];
+}
+
+export interface Assignment {
+  id: string;
+  title: string;
+  courseId: string;
+  courseCode: string;
+  dueDate: string;
+  type: 'quiz' | 'essay' | 'drill';
+  maxScore: number;
+  description: string;
+}
+
+export interface StudentSubmission {
+  id: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  courseId: string;
+  courseCode: string;
+  studentName: string;
+  studentResponse: string;
+  submittedAt: string;
+  graded: boolean;
+  score?: number;
+  feedback?: string;
+}
 
 export const INITIAL_COURSES: Course[] = [
   {
@@ -57,7 +101,7 @@ export const INITIAL_SUBMISSIONS: StudentSubmission[] = [
     courseId: 'course-1',
     courseCode: 'SPAN-301',
     studentName: 'Carlos Mendoza',
-    studentResponse: 'Creo que el arte del futuro estará muy influenciado por la tecnología. Sin embargo, el toque humano y la emoción real jamás podrán ser reemplazados por completo por algoritmos. El lenguaje del arte conecta almas, no procesadores.',
+    studentResponse: 'Creo que el arte del futuro estará muy influenciado por la tecnología. Sin embargo, el toque humano y la emoción real jamás podrán ser reemplazados por completo por algoritmos. El linguagem del arte conecta almas, no procesadores.',
     submittedAt: '2026-05-28T18:30:00Z',
     graded: false
   },
