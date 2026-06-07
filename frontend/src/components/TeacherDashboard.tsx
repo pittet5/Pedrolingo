@@ -116,10 +116,10 @@ export default function TeacherDashboard({
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Welcome Title and Quick stats */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-5">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 dark:border-white/10 pb-5">
         <div>
-          <h2 className="text-3xl font-extrabold text-[#102A43] tracking-tight">Bem-vindo de volta, Professor Pedro</h2>
-          <p className="text-sm text-slate-500 mt-1">Veja as novidades e materiais pedagógicos das suas turmas hoje.</p>
+          <h2 className="text-3xl font-extrabold text-[#102A43] dark:text-white tracking-tight">Bem-vindo de volta, Professor Pedro</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Veja as novidades e materiais pedagógicos das suas turmas hoje.</p>
         </div>
         <button
           onClick={() => setShowAddCourseModal(true)}
@@ -132,33 +132,33 @@ export default function TeacherDashboard({
 
       {/* Grid Status Quick Metric Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-blue-50 text-[#102A43] rounded-xl">
+        <div className="bg-white dark:bg-[#0A1929] p-5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-blue-50 dark:bg-blue-500/20 text-[#102A43] dark:text-blue-400 rounded-xl">
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Total de Alunos</span>
-            <span className="text-2xl font-extrabold text-[#102A43]">{totalStudentsTotal}</span>
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider">Total de Alunos</span>
+            <span className="text-2xl font-extrabold text-[#102A43] dark:text-white">{totalStudentsTotal}</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+        <div className="bg-white dark:bg-[#0A1929] p-5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl">
             <Clock className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Pendentes de Nota</span>
-            <span className="text-2xl font-extrabold text-[#102A43]">{pendingGradingCount} tarefas</span>
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider">Pendentes de Nota</span>
+            <span className="text-2xl font-extrabold text-[#102A43] dark:text-white">{pendingGradingCount} tarefas</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+        <div className="bg-white dark:bg-[#0A1929] p-5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl">
             <Award className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Aproveitamento</span>
-            <span className="text-2xl font-extrabold text-[#102A43]">93.5%</span>
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider">Aproveitamento</span>
+            <span className="text-2xl font-extrabold text-[#102A43] dark:text-white">93.5%</span>
           </div>
         </div>
       </div>
@@ -169,11 +169,11 @@ export default function TeacherDashboard({
         {/* Course management block */}
         <section className="lg:col-span-8 space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold text-[#102A43] flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-indigo-500" />
+            <h3 className="text-lg font-bold text-[#102A43] dark:text-white flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
               Seus Cursos Ativos
             </h3>
-            <span className="text-xs bg-slate-100 px-3 py-1 rounded-full text-slate-500 font-bold">
+            <span className="text-xs bg-slate-100 dark:bg-white/10 px-3 py-1 rounded-full text-slate-500 dark:text-slate-300 font-bold">
               {courses.length} cursos cadastrados
             </span>
           </div>
@@ -185,36 +185,36 @@ export default function TeacherDashboard({
                 <div
                   key={course.id}
                   onClick={() => handleCourseClick(course)}
-                  className={`bg-white rounded-2xl p-5 border cursor-pointer transition-all duration-300 relative overflow-hidden group hover:shadow-md ${
-                    isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100'
+                  className={`bg-white dark:bg-[#0A1929] rounded-2xl p-5 border cursor-pointer transition-all duration-300 relative overflow-hidden group hover:shadow-md ${
+                    isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100 dark:border-white/10'
                   }`}
                 >
                   <div className="absolute top-0 right-0 p-3">
-                    <span className="text-[10px] bg-slate-150 text-slate-500 font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                    <span className="text-[10px] bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-300 font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
                       {course.term}
                     </span>
                   </div>
 
-                  <span className="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded block w-fit mb-3">
+                  <span className="text-xs font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/20 px-2 py-0.5 rounded block w-fit mb-3">
                     {course.code} • {course.language}
                   </span>
 
-                  <h4 className="text-md font-extrabold text-[#102A43] group-hover:text-indigo-600 transition truncate-words">
+                  <h4 className="text-md font-extrabold text-[#102A43] dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate-words">
                     {course.title}
                   </h4>
 
-                  <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-50 text-center">
+                  <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-white/5 text-center">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Alunos</span>
-                      <p className="text-sm font-extrabold text-[#102A43]">{course.studentsCount}</p>
+                      <p className="text-sm font-extrabold text-[#102A43] dark:text-white">{course.studentsCount}</p>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Frequência</span>
-                      <p className="text-sm font-extrabold text-[#102A43]">{course.averageAttendance}%</p>
+                      <p className="text-sm font-extrabold text-[#102A43] dark:text-white">{course.averageAttendance}%</p>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Aprov.</span>
-                      <p className="text-sm font-extrabold text-indigo-600">{course.averageGrade}</p>
+                      <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">{course.averageGrade}</p>
                     </div>
                   </div>
 
@@ -298,10 +298,10 @@ export default function TeacherDashboard({
         </section>
 
         {/* Pending Grading section */}
-        <section className="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-100 h-fit space-y-5 shadow-sm">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+        <section className="lg:col-span-4 bg-white dark:bg-[#0A1929] p-5 rounded-2xl border border-slate-100 dark:border-white/10 h-fit space-y-5 shadow-sm">
+          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/10 pb-3">
             <Trophy className="w-5 h-5 text-[#EFE4B0]" />
-            <h3 className="text-base font-bold text-[#102A43]">Avaliações de Alunos</h3>
+            <h3 className="text-base font-bold text-[#102A43] dark:text-white">Avaliações de Alunos</h3>
           </div>
 
           <div className="space-y-4">
@@ -318,14 +318,14 @@ export default function TeacherDashboard({
                   className="p-4 rounded-xl bg-[#EFE4B0]/10 border border-[#EFE4B0]/30 hover:bg-[#EFE4B0]/20 transition cursor-pointer hover:scale-[1.01]"
                 >
                   <div className="flex justify-between items-start gap-2 mb-2">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-50 text-[#102A43] rounded">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 rounded">
                       {sub.courseCode}
                     </span>
                     <span className="text-[11px] text-slate-400 font-medium">Aguarda correção</span>
                   </div>
 
-                  <h4 className="text-xs font-bold text-[#102A43] truncate-words">{sub.assignmentTitle}</h4>
-                  <p className="text-[11px] text-slate-500 mt-2 font-medium">Aluno(a): <strong className="text-slate-700">{sub.studentName}</strong></p>
+                  <h4 className="text-xs font-bold text-[#102A43] dark:text-white truncate-words">{sub.assignmentTitle}</h4>
+                  <p className="text-[11px] text-slate-500 mt-2 font-medium">Aluno(a): <strong className="text-slate-700 dark:text-slate-300">{sub.studentName}</strong></p>
 
                   <div className="mt-3 pt-2 border-t border-slate-100/50 flex justify-end items-center text-[10px] text-indigo-600 font-bold gap-1">
                     <span>Atribuir Nota</span>
@@ -345,13 +345,13 @@ export default function TeacherDashboard({
       </div>
 
       {/* OVERALL PERFORMANCE CHARTS OR GRAPHICS */}
-      <section className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-        <h3 className="text-sm font-bold text-[#102A43] uppercase tracking-wider">Desempenho Semestral Geral</h3>
+      <section className="bg-white dark:bg-[#0A1929] p-6 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm space-y-4">
+        <h3 className="text-sm font-bold text-[#102A43] dark:text-white uppercase tracking-wider">Desempenho Semestral Geral</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2 text-xs">
             <div className="flex justify-between items-end">
               <span className="font-bold text-slate-500">Média Geral de Frequência das Turmas</span>
-              <span className="text-sm font-extrabold text-[#102A43]">92%</span>
+              <span className="text-sm font-extrabold text-[#102A43] dark:text-white">92%</span>
             </div>
             <div className="w-full bg-slate-105 h-2.5 rounded-full overflow-hidden">
               <div className="bg-[#EFE4B0] h-full rounded-full" style={{ width: '92%' }}></div>
@@ -361,7 +361,7 @@ export default function TeacherDashboard({
           <div className="space-y-2 text-xs">
             <div className="flex justify-between items-end">
               <span className="font-bold text-slate-500">Média de Aprovação de Notas de Redações</span>
-              <span className="text-sm font-extrabold text-[#102A43]">85%</span>
+              <span className="text-sm font-extrabold text-[#102A43] dark:text-white">85%</span>
             </div>
             <div className="w-full bg-slate-105 h-2.5 rounded-full overflow-hidden">
               <div className="bg-[#102A43] h-full rounded-full" style={{ width: '85%' }}></div>

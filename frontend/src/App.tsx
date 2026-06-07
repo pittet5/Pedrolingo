@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Course, StudentSubmission, Student, Assignment } from './types';
 import TeacherDashboard from './components/TeacherDashboard';
 import StudentDashboard from './components/StudentDashboard';
+import LoginScreen, { UserProfile } from './components/LoginScreen';
+import SettingsModal from './components/SettingsModal';
 import AICopilot from './components/AICopilot';
 import { 
   Users, BookOpen, Clock, Plus, Award, CheckCircle, 
   ChevronRight, Calendar, UserPlus, Sparkles, GraduationCap,
-  Play, Check, Heart, HelpCircle, Bell, ArrowLeftRight
+  Play, Check, Heart, HelpCircle, Bell, ArrowLeftRight, Settings
 } from 'lucide-react';
 
 export default function App() {
@@ -18,6 +20,8 @@ export default function App() {
 
   // Portal Toggle
   const [currentPortal, setCurrentPortal] = useState<'teacher' | 'student'>('teacher');
+  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Custom alerts/toasts
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -173,8 +177,17 @@ export default function App() {
     }
   };
 
+  if (!currentProfile) {
+    return (
+      <LoginScreen onLogin={(profile) => {
+        setCurrentPortal(profile.role);
+        setCurrentProfile(profile);
+      }} />
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans relative pb-10">
+    <div className="min-h-screen bg-slate-50 text-slate-800 dark:bg-[#050C14] dark:text-slate-200 flex flex-col font-sans relative pb-10 transition-colors duration-300">
       
       {/* Dynamic Floating Toast feedback */}
       {toastMessage && (
@@ -185,20 +198,20 @@ export default function App() {
       )}
 
       {/* Main Responsive Header shared bar */}
-      <header className="fixed top-0 w-full h-16 bg-white border-b border-slate-200 shadow-sm z-50 flex justify-between items-center px-6">
+      <header className="fixed top-0 w-full h-16 bg-white dark:bg-[#0A1929] border-b border-slate-200 dark:border-white/10 shadow-sm z-50 flex justify-between items-center px-6 transition-colors duration-300">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-tr from-[#102A43] to-blue-900 rounded-xl flex items-center justify-center text-white shadow font-black text-xl tracking-tighter">
-            P
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow shrink-0 bg-white">
+            <img src="/logo.png" alt="Pedrolingo Logo" className="w-full h-full object-cover" />
           </div>
-          <span className="text-xl font-extrabold text-[#102A43] tracking-tight">Pedrolingo</span>
-          <span className="hidden sm:inline-block h-4 w-px bg-slate-200 mx-1" />
+          <span className="text-xl font-extrabold text-[#102A43] dark:text-white tracking-tight">Pedrolingo</span>
+          <span className="hidden sm:inline-block h-4 w-px bg-slate-200 dark:bg-white/10 mx-1" />
           <span className="hidden sm:inline-block text-[11px] font-bold text-slate-400 uppercase tracking-widest">
             Portal Acadêmico
           </span>
         </div>
 
         {/* Dynamic Portal View Selector toggles */}
-        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border">
+        <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 p-1.5 rounded-xl border dark:border-white/10 transition-colors">
           <button
             onClick={() => {
               setCurrentPortal('teacher');
@@ -206,8 +219,8 @@ export default function App() {
             }}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
               currentPortal === 'teacher'
-                ? 'bg-white text-[#102A43] shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white text-[#102A43] shadow-sm dark:bg-[#102A43] dark:text-white'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             <GraduationCap className="w-4 h-4 shrink-0" />
@@ -220,8 +233,8 @@ export default function App() {
             }}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
               currentPortal === 'student'
-                ? 'bg-white text-[#102A43] shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white text-[#102A43] shadow-sm dark:bg-[#102A43] dark:text-white'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             <Users className="w-4 h-4 shrink-0" />
@@ -229,20 +242,33 @@ export default function App() {
           </button>
         </div>
 
-        <div className="flex items-center gap-3 text-slate-400">
-          <button className="p-2 hover:bg-slate-100 rounded-full transition">
+        <div className="flex items-center gap-3 text-slate-400 dark:text-slate-300">
+          <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full transition cursor-pointer">
+            <Settings className="w-4 h-4" />
+          </button>
+          <button className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full transition">
             <Bell className="w-4 h-4" />
           </button>
-          <div className="w-8 h-8 rounded-full bg-slate-200 border border-slate-300 overflow-hidden shrink-0">
-            <img 
-              src={
-                currentPortal === 'teacher'
-                  ? 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyX-THKXWPBeDg-RR6uU_S-JtjxT097KMRuXgtroKOeiRMSKCEOZD_fcuHoNxYJVPPufDBjDzhBgC-_WnzyTSjf7DTeFZ8UXPNqU4vgXJSdb2zhOuduEBKl9Jgt7OqqbBWJk-Fp1SG859JP59l3It3KruIRZ5E5YC0ZzVkC3KrmavgM5Fd1PWBI0SsXkea12J1-_3vC5kRu_mJjzZnTlznIvXZrH2-7TmE_UgcQ1dQYeomuz2QXXgGq5sWifuQJz7lY7E9y_05etc'
-                  : 'https://lh3.googleusercontent.com/aida-public/AB6AXuD9H_7_MqmLtdVC99kSuTGPFM3MdE-yzTZ6wGLeCEiYkCN2naUn3HGSJ-29re9wQgpG-eAMgUbPj6ibVOs5zjxP5qaeUbfFoODjs-J286Ue4ryPavPOBywBZwCO5LsyahrppMnQVP83qsvQlzIyEOYDKm0p5vaU5J4KV0u7BcVn9ub2GCrvGNIwisSmidXwp7IcCmgWyuAvN9dVJOohZipq1zqL_9j4tOk3Smv1tHX97h5elTfczG9qg8GeELanWXWA5lHh_tv2O08'
-              } 
-              alt="Avatar" 
-              className="w-full h-full object-cover" 
-            />
+          <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 rounded-full pr-3 border border-slate-200 dark:border-white/10 shadow-sm transition hover:shadow-md">
+            <div className="w-8 h-8 rounded-full bg-slate-200 border border-slate-300 overflow-hidden shrink-0">
+              <img 
+                src={currentProfile.avatar} 
+                alt={currentProfile.name} 
+                className="w-full h-full object-cover" 
+              />
+            </div>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 hidden md:inline-block">
+              {currentProfile.name.split(' ')[0]}
+            </span>
+            <button 
+              onClick={() => {
+                setCurrentProfile(null);
+                triggerToast('Você saiu da conta.');
+              }}
+              className="text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition cursor-pointer"
+            >
+              SAIR
+            </button>
           </div>
         </div>
       </header>
@@ -263,7 +289,7 @@ export default function App() {
           />
         ) : (
           <StudentDashboard
-            studentName="Alex Rivera"
+            studentName={currentProfile.name}
             onUpdateMilestone={(inc) => triggerToast(`Parabéns! +${inc} pontos para a meta semanal!`)}
           />
         )}
@@ -276,6 +302,18 @@ export default function App() {
           onApplyMaterials={handleAddMaterialFromAI}
         />
       )}
+
+      {/* Settings Modal */}
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        currentProfileId={currentProfile.id}
+        onProfileDeleted={(id) => {
+          if (id === currentProfile.id) {
+            setCurrentProfile(null);
+          }
+        }}
+      />
     </div>
   );
 }

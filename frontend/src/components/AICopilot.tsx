@@ -100,9 +100,9 @@ export default function AICopilot({ activeCourse, onApplyMaterials }: AICopilotP
   };
 
   return (
-    <aside id="copilot-sidebar" className="w-80 bg-slate-50 border-l border-slate-200 h-screen fixed right-0 top-0 flex flex-col z-40 shadow-sm">
+    <aside id="copilot-sidebar" className="w-80 bg-slate-50 dark:bg-[#0A1929] border-l border-slate-200 dark:border-white/10 h-screen fixed right-0 top-0 flex flex-col z-40 shadow-sm transition-colors duration-300">
       {/* Header */}
-      <div className="p-4 bg-[#102A43] text-white flex items-center justify-between shadow-md">
+      <div className="p-4 bg-[#102A43] dark:bg-[#050C14] text-white flex items-center justify-between shadow-md dark:border-b dark:border-white/10">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#EFE4B0] animate-pulse" />
           <h2 className="font-header text-md font-bold tracking-tight">AI Co-Pilot Pedrolingo</h2>
@@ -129,8 +129,8 @@ export default function AICopilot({ activeCourse, onApplyMaterials }: AICopilotP
             <div
               className={`p-3 rounded-xl text-xs shadow-sm ${
                 msg.sender === 'user'
-                  ? 'bg-[#102A43] text-white rounded-br-none'
-                  : 'bg-[#EFE4B0]/25 text-slate-800 border border-[#EFE4B0]/50 rounded-bl-none'
+                  ? 'bg-[#102A43] dark:bg-indigo-600 text-white rounded-br-none'
+                  : 'bg-[#EFE4B0]/25 dark:bg-[#EFE4B0]/10 text-slate-800 dark:text-slate-200 border border-[#EFE4B0]/50 dark:border-[#EFE4B0]/20 rounded-bl-none'
               }`}
             >
               <MarkdownRenderer text={msg.text} />
@@ -141,7 +141,7 @@ export default function AICopilot({ activeCourse, onApplyMaterials }: AICopilotP
                     msg.actionType === 'quiz' ? 'Novo Quiz Gerado' : msg.actionType === 'resources' ? 'Dicas de Recursos' : 'Plano de Aula Gerado',
                     msg.text
                   )}
-                  className="mt-3 w-full py-1.5 px-3 bg-[#102A43] text-white rounded font-semibold text-[10px] text-center hover:bg-[#102A43]/90 transition"
+                  className="mt-3 w-full py-1.5 px-3 bg-[#102A43] dark:bg-indigo-600 text-white rounded font-semibold text-[10px] text-center hover:bg-[#102A43]/90 dark:hover:bg-indigo-500 transition"
                 >
                   Adicionar este Material ao Curso
                 </button>
@@ -204,36 +204,36 @@ export default function AICopilot({ activeCourse, onApplyMaterials }: AICopilotP
       )}
 
       {/* Chat Input Bar */}
-      <div className="p-3 bg-white border-t border-slate-200 space-y-2">
+      <div className="p-3 bg-white dark:bg-[#0A1929] border-t border-slate-200 dark:border-white/10 space-y-2 transition-colors duration-300">
         {!activeAction && (
           <div className="grid grid-cols-3 gap-1.5 pb-2">
             <button
               onClick={() => handleQuickActionClick('quiz')}
-              className="flex flex-col items-center gap-1 p-2 bg-slate-50 hover:bg-amber-50/50 rounded border border-slate-150 text-center transition"
+              className="flex flex-col items-center gap-1 p-2 bg-slate-50 dark:bg-white/5 hover:bg-amber-50/50 dark:hover:bg-white/10 rounded border border-slate-150 dark:border-white/10 text-center transition"
             >
-              <ListTodo className="w-4 h-4 text-amber-600" />
-              <span className="text-[9px] font-bold text-slate-700">Gerar Quiz</span>
+              <ListTodo className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+              <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300">Gerar Quiz</span>
             </button>
             <button
               onClick={() => handleQuickActionClick('resources')}
-              className="flex flex-col items-center gap-1 p-2 bg-slate-50 hover:bg-amber-50/50 rounded border border-slate-150 text-center transition"
+              className="flex flex-col items-center gap-1 p-2 bg-slate-50 dark:bg-white/5 hover:bg-amber-50/50 dark:hover:bg-white/10 rounded border border-slate-150 dark:border-white/10 text-center transition"
             >
-              <BookOpen className="w-4 h-4 text-[#102A43]" />
-              <span className="text-[9px] font-bold text-slate-700">Recursos</span>
+              <BookOpen className="w-4 h-4 text-[#102A43] dark:text-blue-400" />
+              <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300">Recursos</span>
             </button>
             <button
               onClick={() => handleQuickActionClick('lesson_plan')}
-              className="flex flex-col items-center gap-1 p-2 bg-slate-50 hover:bg-amber-50/50 rounded border border-slate-150 text-center transition"
+              className="flex flex-col items-center gap-1 p-2 bg-slate-50 dark:bg-white/5 hover:bg-amber-50/50 dark:hover:bg-white/10 rounded border border-slate-150 dark:border-white/10 text-center transition"
             >
-              <GraduationCap className="w-4 h-4 text-emerald-600" />
-              <span className="text-[9px] font-bold text-slate-700">Plano Aula</span>
+              <GraduationCap className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+              <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300">Plano Aula</span>
             </button>
           </div>
         )}
 
         <div className="flex items-center gap-2">
           <textarea
-            className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none placeholder:text-slate-400 bg-slate-50 hover:bg-slate-100/50 transition"
+            className="flex-1 px-3 py-2 text-xs border border-slate-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none placeholder:text-slate-400 bg-slate-50 dark:bg-[#050C14] hover:bg-slate-100/50 dark:hover:bg-white/5 dark:text-white transition"
             rows={1}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}

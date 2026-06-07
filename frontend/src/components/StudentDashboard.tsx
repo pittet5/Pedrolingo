@@ -115,43 +115,43 @@ export default function StudentDashboard({ studentName, onUpdateMilestone }: Stu
   return (
     <div className="space-y-10 animate-fade-in text-xs">
       {/* Welcome Title */}
-      <div className="flex flex-col gap-1 border-b border-slate-100 pb-5">
-        <h2 className="text-3xl font-extrabold text-[#102A43] tracking-tight">Bem-vindo de volta, {studentName}!</h2>
-        <p className="text-sm text-slate-500">Você dominou 3 novas competências linguísticas esta semana. Continue assim!</p>
+      <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-white/10 pb-5">
+        <h2 className="text-3xl font-extrabold text-[#102A43] dark:text-white tracking-tight">Bem-vindo de volta, {studentName}!</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Você dominou 3 novas competências linguísticas esta semana. Continue assim!</p>
       </div>
 
       {/* Learning Milestone & Continue Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
         
         {/* Progress Circle & Goal Description */}
-        <div className="md:col-span-8 bg-white border border-slate-150 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 shadow-sm hover:shadow-md transition">
+        <div className="md:col-span-8 bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 shadow-sm hover:shadow-md transition">
           {/* Custom Conic Progress Circle wrapper */}
-          <div className="relative w-40 h-40 shrink-0 flex items-center justify-center rounded-full bg-slate-100">
+          <div className="relative w-40 h-40 shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/5">
             {/* outer visual indicator ring */}
             <div 
               className="absolute inset-0 rounded-full transition-all duration-700"
               style={{
-                background: `conic-gradient(#102A43 ${goalProgress * 3.6}deg, #f1f5f9 0deg)`
+                background: `conic-gradient(#102A43 ${goalProgress * 3.6}deg, transparent 0deg)`
               }}
             />
             {/* Inner background mask */}
-            <div className="absolute inset-3 bg-white rounded-full flex flex-col items-center justify-center shadow-inner z-10">
-              <span className="text-3xl font-extrabold text-[#102A43]">{goalProgress}%</span>
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Meta Semanal</span>
+            <div className="absolute inset-3 bg-white dark:bg-[#0A1929] rounded-full flex flex-col items-center justify-center shadow-inner z-10">
+              <span className="text-3xl font-extrabold text-[#102A43] dark:text-white">{goalProgress}%</span>
+              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Meta Semanal</span>
             </div>
           </div>
 
           <div className="space-y-3 flex-1 text-center sm:text-left">
-            <span className="inline-block px-2.5 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-bold text-[10px] uppercase">
+            <span className="inline-block px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full font-bold text-[10px] uppercase">
               Certificação em Andamento
             </span>
-            <h3 className="text-lg font-extrabold text-[#102A43]">Proficiência Intermediária B2</h3>
-            <p className="text-xs text-slate-500 leading-relaxed font-medium">
+            <h3 className="text-lg font-extrabold text-[#102A43] dark:text-white">Proficiência Intermediária B2</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
               Faltam apenas {100 - goalProgress > 0 ? Math.ceil((100 - goalProgress)/10) : 0} lições práticas rápidas para completar os objetivos de compreensão auditiva deste semestre.
             </p>
             <button 
               onClick={() => launchQuiz('general', 'Prática Diária de Vocabulário')}
-              className="bg-[#102A43] text-white px-5 py-2.5 rounded-xl font-bold hover:opacity-90 active:scale-95 transition cursor-pointer"
+              className="bg-[#102A43] dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:opacity-90 active:scale-95 transition cursor-pointer"
             >
               Continuar Jornada
             </button>
@@ -159,9 +159,9 @@ export default function StudentDashboard({ studentName, onUpdateMilestone }: Stu
         </div>
 
         {/* Up Next Activities Feed */}
-        <div className="md:col-span-4 bg-white border border-slate-150 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
-          <div className="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
-            <h3 className="text-sm font-bold text-[#102A43]">Atividades Próximas</h3>
+        <div className="md:col-span-4 bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
+          <div className="flex justify-between items-center mb-4 border-b border-slate-50 dark:border-white/10 pb-2">
+            <h3 className="text-sm font-bold text-[#102A43] dark:text-white">Atividades Próximas</h3>
             <span className="text-[10px] text-indigo-600 font-bold hover:underline cursor-pointer">Ver todas</span>
           </div>
 
@@ -169,14 +169,14 @@ export default function StudentDashboard({ studentName, onUpdateMilestone }: Stu
             {/* Task 1 */}
             <div 
               onClick={() => launchQuiz('conjugation', 'Desafio Prático de Conjugação')}
-              className="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-amber-50/40 rounded-xl cursor-pointer transition border border-transparent hover:border-amber-200/40 group text-left w-full"
+              className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-[#050C14] hover:bg-amber-50/40 dark:hover:bg-white/5 rounded-xl cursor-pointer transition border border-transparent hover:border-amber-200/40 dark:hover:border-white/10 group text-left w-full"
             >
-              <div className="p-2 bg-indigo-50 text-[#102A43] rounded-lg group-hover:bg-[#EFE4B0] transition">
+              <div className="p-2 bg-indigo-50 dark:bg-indigo-500/20 text-[#102A43] dark:text-indigo-400 rounded-lg group-hover:bg-[#EFE4B0] dark:group-hover:bg-[#EFE4B0]/20 transition">
                 <Globe className="w-4 h-4" />
               </div>
               <div className="flex-1 truncate">
-                <h4 className="font-bold text-slate-800">Conjugação Subjuntivo</h4>
-                <p className="text-[10px] text-slate-400 font-medium">Auto-ritmo • 5-10 minutos</p>
+                <h4 className="font-bold text-slate-800 dark:text-white">Conjugação Subjuntivo</h4>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Auto-ritmo • 5-10 minutos</p>
               </div>
               {completedQuizzes.includes('conjugation') ? (
                 <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -188,14 +188,14 @@ export default function StudentDashboard({ studentName, onUpdateMilestone }: Stu
             {/* Task 2 */}
             <div 
               onClick={() => launchQuiz('pronunciation', 'Drill de Pronúncia Fonética')}
-              className="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-amber-50/40 rounded-xl cursor-pointer transition border border-transparent hover:border-amber-200/40 group text-left w-full"
+              className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-[#050C14] hover:bg-amber-50/40 dark:hover:bg-white/5 rounded-xl cursor-pointer transition border border-transparent hover:border-amber-200/40 dark:hover:border-white/10 group text-left w-full"
             >
-              <div className="p-2 bg-indigo-50 text-[#102A43] rounded-lg group-hover:bg-[#EFE4B0] transition">
+              <div className="p-2 bg-indigo-50 dark:bg-indigo-500/20 text-[#102A43] dark:text-indigo-400 rounded-lg group-hover:bg-[#EFE4B0] dark:group-hover:bg-[#EFE4B0]/20 transition">
                 <Volume2 className="w-4 h-4" />
               </div>
               <div className="flex-1 truncate">
-                <h4 className="font-bold text-slate-800">Drill Prático de Pronúncia</h4>
-                <p className="text-[10px] text-slate-400 font-medium">Praticar • 5 minutos</p>
+                <h4 className="font-bold text-slate-800 dark:text-white">Drill Prático de Pronúncia</h4>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Praticar • 5 minutos</p>
               </div>
               {completedQuizzes.includes('pronunciation') ? (
                 <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -210,93 +210,93 @@ export default function StudentDashboard({ studentName, onUpdateMilestone }: Stu
       {/* Course Enrollment Cards with actual progresses */}
       <section className="space-y-5">
         <div className="flex justify-between items-center pb-2">
-          <h3 className="text-lg font-bold text-[#102A43] flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-500" />
+          <h3 className="text-lg font-bold text-[#102A43] dark:text-white flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
             Matérias Matriculadas
           </h3>
-          <span className="text-xs text-slate-400">Progresso Geral Semestral</span>
+          <span className="text-xs text-slate-400 dark:text-slate-500">Progresso Geral Semestral</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Card 1 */}
-          <div className="bg-white border border-slate-150 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
+          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
             <div className="h-24 bg-gradient-to-r from-blue-900 to-[#102A43] border-b-4 border-[#EFE4B0] flex items-end p-3 relative">
               <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
                 Espanhol Avançado
               </span>
             </div>
             <div className="p-4 space-y-3">
-              <h4 className="font-extrabold text-slate-800 text-sm">Literatura e Espanhol Avançado</h4>
+              <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">Literatura e Espanhol Avançado</h4>
               <div className="space-y-1.5 pt-1">
                 <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-400">Progresso</span>
-                  <span className="text-indigo-600 font-extrabold">{courseProgresses.spanLit}%</span>
+                  <span className="text-slate-400 dark:text-slate-500">Progresso</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{courseProgresses.spanLit}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="bg-[#102A43] h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.spanLit}%` }} />
+                <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                  <div className="bg-[#102A43] dark:bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.spanLit}%` }} />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Card 2 */}
-          <div className="bg-white border border-slate-150 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
+          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
             <div className="h-24 bg-gradient-to-r from-teal-950 to-emerald-900 border-b-4 border-[#EFE4B0] flex items-end p-3 relative">
               <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
                 Meio Ambiente
               </span>
             </div>
             <div className="p-4 space-y-3">
-              <h4 className="font-extrabold text-slate-800 text-sm">Dinâmicas Ambientais do Planeta</h4>
+              <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">Dinâmicas Ambientais do Planeta</h4>
               <div className="space-y-1.5 pt-1">
                 <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-400">Progresso</span>
-                  <span className="text-indigo-600 font-extrabold">{courseProgresses.envDyn}%</span>
+                  <span className="text-slate-400 dark:text-slate-500">Progresso</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{courseProgresses.envDyn}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="bg-[#102A43] h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.envDyn}%` }} />
+                <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                  <div className="bg-[#102A43] dark:bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.envDyn}%` }} />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Card 3 */}
-          <div className="bg-white border border-slate-150 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
+          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
             <div className="h-24 bg-gradient-to-r from-slate-900 to-indigo-950 border-b-4 border-[#EFE4B0] flex items-end p-3 relative">
               <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
                 Tecnologia
               </span>
             </div>
             <div className="p-4 space-y-3">
-              <h4 className="font-extrabold text-slate-800 text-sm">Fundamentos de Ciência de Dados</h4>
+              <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">Fundamentos de Ciência de Dados</h4>
               <div className="space-y-1.5 pt-1">
                 <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-400">Progresso</span>
-                  <span className="text-indigo-600 font-extrabold">{courseProgresses.dataSci}%</span>
+                  <span className="text-slate-400 dark:text-slate-500">Progresso</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{courseProgresses.dataSci}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="bg-[#102A43] h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.dataSci}%` }} />
+                <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                  <div className="bg-[#102A43] dark:bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.dataSci}%` }} />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Card 4 */}
-          <div className="bg-white border border-slate-150 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
+          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
             <div className="h-24 bg-gradient-to-r from-amber-950 to-amber-900 border-b-4 border-[#EFE4B0] flex items-end p-3 relative">
               <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
                 História Geral
               </span>
             </div>
             <div className="p-4 space-y-3">
-              <h4 className="font-extrabold text-slate-800 text-sm">Civilizações Globais Modernas</h4>
+              <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">Civilizações Globais Modernas</h4>
               <div className="space-y-1.5 pt-1">
                 <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-400">Progresso</span>
-                  <span className="text-indigo-600 font-extrabold">{courseProgresses.globCiv}%</span>
+                  <span className="text-slate-400 dark:text-slate-500">Progresso</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{courseProgresses.globCiv}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="bg-[#102A43] h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.globCiv}%` }} />
+                <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                  <div className="bg-[#102A43] dark:bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.globCiv}%` }} />
                 </div>
               </div>
             </div>
