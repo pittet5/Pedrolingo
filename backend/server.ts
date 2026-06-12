@@ -5,7 +5,7 @@ import { GoogleGenAI } from '@google/genai';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcrypt';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { supabase } from './supabaseClient.js';
 import {
   INITIAL_COURSES,
@@ -29,7 +29,14 @@ app.use(cors());
 app.use(express.json());
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.SMTP_USER || 'pedrolingomvp@gmail.com',
+    pass: process.env.SMTP_PASS
+  }
+});
 
 // Password strength: at least 8 chars, 1 letter, 1 number, 1 special char
 function isStrongPassword(password: string): boolean {
@@ -163,9 +170,9 @@ app.post('/api/auth/register', async (req, res) => {
       if (insertError) throw insertError;
     }
 
-    // Send verification email via Resend
-    await resend.emails.send({
-      from: 'Pedrolingo <onboarding@resend.dev>',
+    // Send verification email via Gmail SMTP
+    await transporter.sendMail({
+      from: `"Pedrolingo" <${process.env.SMTP_USER || 'pedrolingomvp@gmail.com'}>`,
       to: email,
       subject: 'Seu código de verificação Pedrolingo',
       html: `
@@ -303,8 +310,8 @@ app.post('/api/auth/resend-code', async (req, res) => {
       .update({ verification_code: code, verification_expires_at: expiresAt })
       .eq('id', profile.id);
 
-    await resend.emails.send({
-      from: 'Pedrolingo <onboarding@resend.dev>',
+    await transporter.sendMail({
+      from: `"Pedrolingo" <${process.env.SMTP_USER || 'pedrolingomvp@gmail.com'}>`,
       to: email,
       subject: 'Novo código de verificação Pedrolingo',
       html: `
