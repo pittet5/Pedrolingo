@@ -234,11 +234,10 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full flex items-center gap-2.5 shadow-2xl text-sm font-semibold ${
-              error
+            className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full flex items-center gap-2.5 shadow-2xl text-sm font-semibold ${error
                 ? 'bg-red-950/90 border border-red-500/40 text-red-300'
                 : 'bg-emerald-950/90 border border-emerald-500/40 text-emerald-300'
-            }`}
+              }`}
           >
             {error ? <XCircle className="w-4 h-4 shrink-0" /> : <CheckCircle className="w-4 h-4 shrink-0" />}
             {error || successMsg}
