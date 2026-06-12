@@ -4,7 +4,7 @@ import cors from 'cors';
 import { GoogleGenAI } from '@google/genai';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 import { supabase } from './supabaseClient.js';
 import {

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 import { setCors } from '../_lib/cors';
 import { supabase } from '../_lib/supabaseClient';
