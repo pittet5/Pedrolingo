@@ -24,6 +24,8 @@ const AVATARS = [
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria&backgroundColor=d1d4f9',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah&backgroundColor=b6e3f4',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo&backgroundColor=c0aede',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana&backgroundColor=ffdfbf',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Adrian&backgroundColor=d1d4f9',
 ];
 
 type View = 'welcome' | 'login' | 'register' | 'verify';
