@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Award, CheckCircle, Clock, Volume2, Globe, Sparkles, Check, ArrowRight, X } from 'lucide-react';
-import { Course } from '../types';
+import { Course, Assignment, Student } from '../types';
 
 type StudentDashboardProps = {
   studentName: string;
   studentId: string;
   studentEmail: string;
   courses: Course[];
+  onEnroll?: (courseId: string, student: Student) => void;
   onUpdateMilestone?: (increment: number) => void;
 };
 
@@ -30,7 +31,7 @@ const getGradient = (lang: string) => {
   }
 };
 
-export default function StudentDashboard({ studentName, studentId, studentEmail, courses, onUpdateMilestone }: StudentDashboardProps) {
+export default function StudentDashboard({ studentName, studentId, studentEmail, courses, onEnroll, onUpdateMilestone }: StudentDashboardProps) {
   const [goalProgress, setGoalProgress] = useState(0);
   const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
   const [activeQuiz, setActiveQuiz] = useState<{
@@ -38,12 +39,30 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
     title: string;
     questions: QuizQuestion[];
   } | null>(null);
+  const [activeMedia, setActiveMedia] = useState<{text?: string, imageUrl?: string, videoUrl?: string} | null>(null);
 
   // Quiz completion flows
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [quizScore, setQuizScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
+
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      try {
+        const res = await fetch('/api/assignments');
+        const data = await res.json();
+        if (data.success && data.data) {
+          setAssignments(data.data);
+        }
+      } catch (e) {
+        console.error('Error fetching assignments:', e);
+      }
+    };
+    fetchAssignments();
+  }, []);
 
   useEffect(() => {
     if (studentId) {
@@ -86,45 +105,67 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
     )
   );
 
+  const availableCourses = courses.filter(
+    (course) => !enrolledCourses.some((ec) => ec.id === course.id)
+  );
+
   const activeCourse = enrolledCourses[0] || null;
 
-  const launchQuiz = (id: string, title: string) => {
+  const launchQuiz = (assignment: Assignment) => {
     let questions: QuizQuestion[] = [];
-    if (id === 'conjugation') {
-      questions = [
-        {
-          question: '¿Cuál es la forma correcta del subjuntivo para: "Espero que tú _____ (venir) a la fiesta"?',
-          options: ['vienes', 'vengas', 'vengas tú', 'vinieras'],
-          answer: 1,
-          explanation: 'Para expresar deseos (espero que), usamos el presente de subjuntivo del verbo venir (vengas).'
-        },
-        {
-          question: 'Completa la frase con el condicional: "Si yo tuviera dinero, _____ (comprar) una casa."',
-          options: ['compraré', 'compro', 'compraría', 'comprara'],
-          answer: 2,
-          explanation: 'La estructura hipotética "Si + imperfecto de subjuntivo" se completa con el condicional simple (compraría).'
-        }
-      ];
-    } else if (id === 'pronunciation') {
-      questions = [
-        {
-          question: 'Em Português, a pronúncia da palavra "Excluir" tem o som de "X" semelhante a:',
-          options: ['Sexta-feira (som de S)', 'Enxame (som de CH)', 'Exame (som de Z)', 'Fixo (som de KS)'],
-          answer: 1,
-          explanation: '"Excluir" em português se pronuncia estruturalmente com o som de "S" surdo, assim como "Sexta-feira".'
-        }
-      ];
-    } else {
-      questions = [
-        {
-          question: 'Qual palavra significa "Maçã" em espanhol?',
-          options: ['Manzana', 'Fresa', 'Uva', 'Melocotón'],
-          answer: 0,
-          explanation: '"Manzana" é a tradução espanhola correta de maçã.'
-        }
-      ];
+    let media = null;
+    let title = assignment.title;
+    let id = assignment.id;
+
+    try {
+      const parsed = JSON.parse(assignment.description);
+      if (parsed.questions && Array.isArray(parsed.questions)) {
+        questions = parsed.questions;
+      }
+      media = {
+        text: parsed.text,
+        imageUrl: parsed.imageUrl,
+        videoUrl: parsed.videoUrl
+      };
+    } catch (e) {
+      if (id === 'conjugation' || id === 'assign-2' || title.toLowerCase().includes('conjug')) {
+        questions = [
+          {
+            question: '¿Cuál es la forma correcta del subjuntivo para: "Espero que tú _____ (venir) a la fiesta"?',
+            options: ['vienes', 'vengas', 'vengas tú', 'vinieras'],
+            answer: 1,
+            explanation: 'Para expresar deseos (espero que), usamos el presente de subjuntivo del verbo venir (vengas).'
+          },
+          {
+            question: 'Completa la frase con el condicional: "Si yo tuviera dinero, _____ (comprar) una casa."',
+            options: ['compraré', 'compro', 'compraría', 'comprara'],
+            answer: 2,
+            explanation: 'La estrutura hipotética "Si + imperfecto de subjuntivo" se completa con el condicional simple (compraría).'
+          }
+        ];
+      } else if (id === 'pronunciation' || title.toLowerCase().includes('pronúnc')) {
+        questions = [
+          {
+            question: 'Em Português, a pronúncia da palavra "Excluir" tem o som de "X" semelhante a:',
+            options: ['Sexta-feira (som de S)', 'Enxame (som de CH)', 'Exame (som de Z)', 'Fixo (som de KS)'],
+            answer: 1,
+            explanation: '"Excluir" em português se pronuncia estruturalmente com o som de "S" surdo, assim como "Sexta-feira".'
+          }
+        ];
+      } else {
+        questions = [
+          {
+            question: 'Qual palavra significa "Maçã" em espanhol?',
+            options: ['Manzana', 'Fresa', 'Uva', 'Melocotón'],
+            answer: 0,
+            explanation: '"Manzana" é a tradução espanhola correta de maçã.'
+          }
+        ];
+      }
+      media = { text: assignment.description };
     }
 
+    setActiveMedia(media);
     setActiveQuiz({ id, title, questions });
     setCurrentQuestionIndex(0);
     setSelectedOption(null);
@@ -208,7 +249,7 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
               }
             </p>
             <button 
-              onClick={() => launchQuiz('general', 'Prática Diária de Vocabulário')}
+              onClick={() => launchQuiz({ id: 'general', title: 'Prática Diária de Vocabulário', description: '' } as Assignment)}
               className="bg-[#102A43] dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:opacity-90 active:scale-95 transition cursor-pointer"
             >
               Continuar Jornada
@@ -224,43 +265,30 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
           </div>
 
           <div className="space-y-3 flex-1">
-            {/* Task 1 */}
-            <div 
-              onClick={() => launchQuiz('conjugation', 'Desafio Prático de Conjugação')}
-              className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-[#050C14] hover:bg-amber-50/40 dark:hover:bg-white/5 rounded-xl cursor-pointer transition border border-transparent hover:border-amber-200/40 dark:hover:border-white/10 group text-left w-full"
-            >
-              <div className="p-2 bg-indigo-50 dark:bg-indigo-500/20 text-[#102A43] dark:text-indigo-400 rounded-lg group-hover:bg-[#EFE4B0] dark:group-hover:bg-[#EFE4B0]/20 transition">
-                <Globe className="w-4 h-4" />
-              </div>
-              <div className="flex-1 truncate">
-                <h4 className="font-bold text-slate-800 dark:text-white">Conjugação Subjuntivo</h4>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Auto-ritmo • 5-10 minutos</p>
-              </div>
-              {completedQuizzes.includes('conjugation') ? (
-                <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-              ) : (
-                <ArrowRight className="w-4 h-4 text-slate-350 group-hover:translate-x-0.5 transition" />
-              )}
-            </div>
-
-            {/* Task 2 */}
-            <div 
-              onClick={() => launchQuiz('pronunciation', 'Drill de Pronúncia Fonética')}
-              className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-[#050C14] hover:bg-amber-50/40 dark:hover:bg-white/5 rounded-xl cursor-pointer transition border border-transparent hover:border-amber-200/40 dark:hover:border-white/10 group text-left w-full"
-            >
-              <div className="p-2 bg-indigo-50 dark:bg-indigo-500/20 text-[#102A43] dark:text-indigo-400 rounded-lg group-hover:bg-[#EFE4B0] dark:group-hover:bg-[#EFE4B0]/20 transition">
-                <Volume2 className="w-4 h-4" />
-              </div>
-              <div className="flex-1 truncate">
-                <h4 className="font-bold text-slate-800 dark:text-white">Drill Prático de Pronúncia</h4>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Praticar • 5 minutos</p>
-              </div>
-              {completedQuizzes.includes('pronunciation') ? (
-                <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-              ) : (
-                <ArrowRight className="w-4 h-4 text-slate-350 group-hover:translate-x-0.5 transition" />
-              )}
-            </div>
+            {assignments.filter(a => enrolledCourses.some(c => c.id === a.courseId)).length > 0 ? (
+              assignments.filter(a => enrolledCourses.some(c => c.id === a.courseId)).map((assignment) => (
+                <div 
+                  key={assignment.id}
+                  onClick={() => launchQuiz(assignment)}
+                  className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-[#050C14] hover:bg-amber-50/40 dark:hover:bg-white/5 rounded-xl cursor-pointer transition border border-transparent hover:border-amber-200/40 dark:hover:border-white/10 group text-left w-full"
+                >
+                  <div className="p-2 bg-indigo-50 dark:bg-indigo-500/20 text-[#102A43] dark:text-indigo-400 rounded-lg group-hover:bg-[#EFE4B0] dark:group-hover:bg-[#EFE4B0]/20 transition">
+                    {assignment.type === 'quiz' ? <Globe className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </div>
+                  <div className="flex-1 truncate">
+                    <h4 className="font-bold text-slate-800 dark:text-white">{assignment.title}</h4>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Prazo: {new Date(assignment.dueDate).toLocaleDateString()} • {assignment.courseCode}</p>
+                  </div>
+                  {completedQuizzes.includes(assignment.id) ? (
+                    <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4 text-slate-350 group-hover:translate-x-0.5 transition" />
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-slate-500 p-2">Nenhuma atividade próxima encontrada.</p>
+            )}
           </div>
         </div>
       </div>
@@ -322,6 +350,60 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
         )}
       </section>
 
+      {/* Available Courses Section */}
+      <section className="space-y-5">
+        <div className="flex justify-between items-center pb-2">
+          <h3 className="text-lg font-bold text-[#102A43] dark:text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+            Cursos Disponíveis
+          </h3>
+          <span className="text-xs text-slate-400 dark:text-slate-500">Explore novas jornadas</span>
+        </div>
+
+        {availableCourses.length === 0 ? (
+          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl p-8 text-center text-slate-500 dark:text-slate-400 font-medium">
+            Você já está matriculado em todos os cursos disponíveis!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {availableCourses.map((course) => (
+              <div key={course.id} className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition flex flex-col">
+                <div className={`h-24 bg-gradient-to-r ${getGradient(course.language)} border-b-4 border-[#EFE4B0] flex items-end p-3 relative`}>
+                  <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
+                    {course.language}
+                  </span>
+                </div>
+                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">{course.title}</h4>
+                    <p className="text-xs text-slate-500 mt-1">{course.code} • {course.term}</p>
+                    <p className="text-[10px] text-slate-400 mt-2 font-medium">{course.studentsCount} alunos matriculados</p>
+                  </div>
+                  
+                  <button 
+                    onClick={() => {
+                      if (onEnroll) {
+                        onEnroll(course.id, {
+                          id: '',
+                          name: studentName,
+                          email: studentEmail,
+                          grade: 0,
+                          attendance: 100,
+                          completedLessons: 0
+                        });
+                      }
+                    }}
+                    className="mt-4 w-full bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white dark:bg-indigo-500/20 dark:text-indigo-400 dark:hover:bg-indigo-600 dark:hover:text-white font-bold py-2 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Matricular-se
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* MODAL: PRÁTICA INTERATIVA DE QUIZ */}
       {activeQuiz && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -340,61 +422,99 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
 
             {!quizFinished ? (
               <div className="space-y-4">
-                {/* Question Info */}
-                <span className="text-xs font-bold text-slate-400">
-                  Questão {currentQuestionIndex + 1} de {activeQuiz.questions.length}
-                </span>
-
-                <div className="p-4 bg-slate-50 rounded-xl font-bold text-slate-800">
-                  {activeQuiz.questions[currentQuestionIndex].question}
-                </div>
-
-                {/* Options List */}
-                <div className="space-y-2">
-                  {activeQuiz.questions[currentQuestionIndex].options.map((option, idx) => {
-                    const isSelected = selectedOption === idx;
-                    const isCorrect = idx === activeQuiz.questions[currentQuestionIndex].answer;
-                    
-                    let btnStyle = 'border-slate-150 bg-white hover:bg-slate-50';
-                    if (selectedOption !== null) {
-                      if (isSelected) {
-                        btnStyle = isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-100' : 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-100';
-                      } else if (isCorrect) {
-                        btnStyle = 'border-emerald-500 bg-emerald-50 text-emerald-800';
-                      } else {
-                        btnStyle = 'border-slate-100 opacity-60 bg-white';
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={idx}
-                        disabled={selectedOption !== null}
-                        onClick={() => handleOptionSelect(idx)}
-                        className={`w-full p-3.5 border rounded-xl text-left font-semibold transition ${btnStyle}`}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Feedback or Next Question Button */}
-                {selectedOption !== null && (
-                  <div className="space-y-3 animate-slide-up">
-                    <div className="p-3 bg-indigo-50/50 border border-indigo-100 text-slate-700 rounded-lg">
-                      <p className="font-bold flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                        Explicação do AI-Tutor:
+                {/* Media Section */}
+                {activeMedia && (activeMedia.text || activeMedia.imageUrl || activeMedia.videoUrl) && (
+                  <div className="space-y-4 mb-4">
+                    {activeMedia.text && (
+                      <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 whitespace-pre-line">
+                        {activeMedia.text}
                       </p>
-                      <p className="mt-1 font-medium">{activeQuiz.questions[currentQuestionIndex].explanation}</p>
+                    )}
+                    {activeMedia.imageUrl && (
+                      <div className="rounded-lg overflow-hidden border border-slate-200">
+                        <img src={activeMedia.imageUrl} alt="Material de apoio" className="w-full h-auto" />
+                      </div>
+                    )}
+                    {activeMedia.videoUrl && (
+                      <div className="rounded-lg overflow-hidden border border-slate-200 aspect-video">
+                        <iframe 
+                          src={activeMedia.videoUrl.replace('watch?v=', 'embed/')} 
+                          className="w-full h-full" 
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeQuiz.questions.length > 0 ? (
+                  <>
+                    {/* Question Info */}
+                    <span className="text-xs font-bold text-slate-400">
+                      Questão {currentQuestionIndex + 1} de {activeQuiz.questions.length}
+                    </span>
+
+                    <div className="p-4 bg-slate-50 rounded-xl font-bold text-slate-800">
+                      {activeQuiz.questions[currentQuestionIndex].question}
                     </div>
 
+                    {/* Options List */}
+                    <div className="space-y-2">
+                      {activeQuiz.questions[currentQuestionIndex].options.map((option, idx) => {
+                        const isSelected = selectedOption === idx;
+                        const isCorrect = idx === activeQuiz.questions[currentQuestionIndex].answer;
+                        
+                        let btnStyle = 'border-slate-150 bg-white hover:bg-slate-50';
+                        if (selectedOption !== null) {
+                          if (isSelected) {
+                            btnStyle = isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-100' : 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-100';
+                          } else if (isCorrect) {
+                            btnStyle = 'border-emerald-500 bg-emerald-50 text-emerald-800';
+                          } else {
+                            btnStyle = 'border-slate-100 opacity-60 bg-white';
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={idx}
+                            disabled={selectedOption !== null}
+                            onClick={() => handleOptionSelect(idx)}
+                            className={`w-full p-3.5 border rounded-xl text-left font-semibold transition ${btnStyle}`}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Feedback or Next Question Button */}
+                    {selectedOption !== null && (
+                      <div className="space-y-3 animate-slide-up">
+                        <div className="p-3 bg-indigo-50/50 border border-indigo-100 text-slate-700 rounded-lg">
+                          <p className="font-bold flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                            Explicação do AI-Tutor:
+                          </p>
+                          <p className="mt-1 font-medium">{activeQuiz.questions[currentQuestionIndex].explanation}</p>
+                        </div>
+
+                        <button
+                          onClick={handleNextQuestion}
+                          className="w-full py-3 bg-[#102A43] text-white rounded-xl font-bold hover:opacity-90 active:scale-95 transition"
+                        >
+                          {currentQuestionIndex + 1 < activeQuiz.questions.length ? 'Avançar' : 'Concluir Desafio'}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="pt-4 flex justify-end border-t border-slate-100">
                     <button
-                      onClick={handleNextQuestion}
+                      onClick={() => handleNextQuestion()}
                       className="w-full py-3 bg-[#102A43] text-white rounded-xl font-bold hover:opacity-90 active:scale-95 transition"
                     >
-                      {currentQuestionIndex + 1 < activeQuiz.questions.length ? 'Avançar' : 'Concluir Desafio'}
+                      Marcar como Concluído
                     </button>
                   </div>
                 )}

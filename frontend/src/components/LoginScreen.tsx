@@ -22,8 +22,10 @@ const AVATARS = [
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=c0aede',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex&backgroundColor=ffdfbf',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria&backgroundColor=d1d4f9',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo&backgroundColor=c0aede',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah&backgroundColor=b6e3f4',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo&backgroundColor=c0aede',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana&backgroundColor=ffdfbf',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Adrian&backgroundColor=d1d4f9',
 ];
 
 type View = 'welcome' | 'login' | 'register' | 'verify';
@@ -235,8 +237,8 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full flex items-center gap-2.5 shadow-2xl text-sm font-semibold ${error
-                ? 'bg-red-950/90 border border-red-500/40 text-red-300'
-                : 'bg-emerald-950/90 border border-emerald-500/40 text-emerald-300'
+              ? 'bg-red-950/90 border border-red-500/40 text-red-300'
+              : 'bg-emerald-950/90 border border-emerald-500/40 text-emerald-300'
               }`}
           >
             {error ? <XCircle className="w-4 h-4 shrink-0" /> : <CheckCircle className="w-4 h-4 shrink-0" />}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Course, StudentSubmission, Student, Assignment } from '../types';
-import { 
-  Users, BookOpen, Clock, Plus, Award, CheckCircle, 
+import {
+  Users, BookOpen, Clock, Plus, Award, CheckCircle,
   ChevronRight, Calendar, UserPlus, FileText, Check, Trophy, X
 } from 'lucide-react';
 
@@ -9,26 +9,26 @@ type TeacherDashboardProps = {
   courses: Course[];
   submissions: StudentSubmission[];
   assignments: Assignment[];
-  onAddCourse: (newCourse: Course) => void;
   onGradeSubmission: (subId: string, score: number, feedback: string) => void;
-  onAddStudent: (courseId: string, student: Student) => void;
   onSelectCourse: (course: Course | null) => void;
+  onAddAssignment?: (assignment: Partial<Assignment>) => void;
+  onAddCourse?: (newCourse: Course) => void;
 };
 
 export default function TeacherDashboard({
   courses,
   submissions,
   assignments,
-  onAddCourse,
   onGradeSubmission,
-  onAddStudent,
-  onSelectCourse
+  onSelectCourse,
+  onAddAssignment,
+  onAddCourse
 }: TeacherDashboardProps) {
   // Modal states
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState<StudentSubmission | null>(null);
-  const [showAddStudentModal, setShowAddStudentModal] = useState<Course | null>(null);
-  
+  const [showAddActivityModal, setShowAddActivityModal] = useState<Course | null>(null);
+
   // Selected course details
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
@@ -60,13 +60,17 @@ export default function TeacherDashboard({
   const [newCourseLanguage, setNewCourseLanguage] = useState('Espanhol');
   const [newCourseTerm, setNewCourseTerm] = useState('Spring 2026');
 
-  const [newStudentName, setNewStudentName] = useState('');
-  const [newStudentEmail, setNewStudentEmail] = useState('');
-  const [newStudentGrade, setNewStudentGrade] = useState('85');
-  const [newStudentAtt, setNewStudentAtt] = useState('90');
-
   const [gradeScore, setGradeScore] = useState<number>(85);
   const [gradeFeedback, setGradeFeedback] = useState('');
+
+  // Activity form state
+  const [actTitle, setActTitle] = useState('');
+  const [actDueDate, setActDueDate] = useState('');
+  const [actType, setActType] = useState<'essay' | 'quiz' | 'drill'>('essay');
+  const [actText, setActText] = useState('');
+  const [actImage, setActImage] = useState('');
+  const [actVideo, setActVideo] = useState('');
+  const [actQuestions, setActQuestions] = useState<{ question: string, options: string[], answer: number, explanation: string }[]>([]);
 
   // Course selection handler
   const handleCourseClick = (course: Course) => {
@@ -92,32 +96,10 @@ export default function TeacherDashboard({
       averageGrade: 'A'
     };
 
-    onAddCourse(newCourse);
+    onAddCourse?.(newCourse);
     setNewCourseName('');
     setNewCourseCode('');
     setShowAddCourseModal(false);
-  };
-
-  // Add student submit
-  const handleAddStudentSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showAddStudentModal || !newStudentName || !newStudentEmail) return;
-
-    const newStudent: Student = {
-      id: `stud-${Date.now()}`,
-      name: newStudentName,
-      email: newStudentEmail,
-      grade: Number(newStudentGrade),
-      attendance: Number(newStudentAtt),
-      completedLessons: 0
-    };
-
-    onAddStudent(showAddStudentModal.id, newStudent);
-    setNewStudentName('');
-    setNewStudentEmail('');
-    setNewStudentGrade('85');
-    setNewStudentAtt('90');
-    setShowAddStudentModal(null);
   };
 
   // Grade submit
@@ -125,10 +107,39 @@ export default function TeacherDashboard({
     e.preventDefault();
     if (!showGradeModal) return;
 
-    onGradeSubmission(showGradeModal.id, gradeScore, gradeFeedback);
     setGradeFeedback('');
     setGradeScore(85);
     setShowGradeModal(null);
+  };
+
+  // Add activity submit
+  const handleAddActivitySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showAddActivityModal || !onAddAssignment) return;
+
+    const payload = {
+      text: actText,
+      imageUrl: actImage,
+      videoUrl: actVideo,
+      questions: actType === 'quiz' ? actQuestions : []
+    };
+
+    onAddAssignment({
+      title: actTitle,
+      courseId: showAddActivityModal.id,
+      courseCode: showAddActivityModal.code,
+      dueDate: actDueDate || new Date().toISOString().split('T')[0],
+      type: actType,
+      maxScore: 100,
+      description: JSON.stringify(payload)
+    });
+
+    setShowAddActivityModal(null);
+    setActTitle('');
+    setActText('');
+    setActImage('');
+    setActVideo('');
+    setActQuestions([]);
   };
 
   // Calculate high level metrics
@@ -197,7 +208,7 @@ export default function TeacherDashboard({
 
       {/* Bento Layout: Main Active Courses & Side Pending Grading Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
+
         {/* Course management block */}
         <section className="lg:col-span-8 space-y-6">
           <div className="flex justify-between items-center">
@@ -217,9 +228,8 @@ export default function TeacherDashboard({
                 <div
                   key={course.id}
                   onClick={() => handleCourseClick(course)}
-                  className={`bg-white dark:bg-[#0A1929] rounded-2xl p-5 border cursor-pointer transition-all duration-300 relative overflow-hidden group hover:shadow-md ${
-                    isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100 dark:border-white/10'
-                  }`}
+                  className={`bg-white dark:bg-[#0A1929] rounded-2xl p-5 border cursor-pointer transition-all duration-300 relative overflow-hidden group hover:shadow-md ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100 dark:border-white/10'
+                    }`}
                 >
                   <div className="absolute top-0 right-0 p-3">
                     <span className="text-[10px] bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-300 font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
@@ -274,15 +284,18 @@ export default function TeacherDashboard({
                           <span className="px-2 py-0.5 bg-blue-50 text-blue-600 font-bold rounded uppercase text-[10px]">
                             {currentCourse.code}
                           </span>
+                          <p className="text-xs text-slate-400 mt-0.5">Gestão acadêmica do Semestre • {currentCourse.language}</p>
                         </div>
-                        <p className="text-xs text-slate-400 mt-0.5">Gestão acadêmica do Semestre • {currentCourse.language}</p>
                       </div>
                       <button
-                        onClick={() => setShowAddStudentModal(currentCourse)}
-                        className="bg-indigo-50 text-indigo-600 font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1.5 cursor-pointer"
+                        onClick={() => {
+                          setActQuestions([{ question: '', options: ['', '', '', ''], answer: 0, explanation: '' }]);
+                          setShowAddActivityModal(currentCourse);
+                        }}
+                        className="bg-emerald-50 text-emerald-600 font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition flex items-center gap-1.5 cursor-pointer"
                       >
-                        <UserPlus className="w-4 h-4" />
-                        Matricular Aluno
+                        <Plus className="w-4 h-4" />
+                        Nova Atividade
                       </button>
                     </div>
 
@@ -315,7 +328,7 @@ export default function TeacherDashboard({
                           ) : (
                             <tr>
                               <td colSpan={5} className="py-6 text-center text-slate-400">
-                                Nenhum aluno matriculado ainda para este curso. Clique em "Matricular Aluno" para adicionar.
+                                Nenhum aluno matriculado ainda para este curso.
                               </td>
                             </tr>
                           )}
@@ -560,75 +573,167 @@ export default function TeacherDashboard({
         </div>
       )}
 
-      {/* MODAL: MATRICULAR ALUNO */}
-      {showAddStudentModal && (
+      {/* MODAL: CRIAR NOVA ATIVIDADE */}
+      {showAddActivityModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-100 animate-scale-up space-y-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-2xl border border-slate-100 animate-scale-up space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-base font-extrabold text-[#102A43]">Matricular Aluno em {showAddStudentModal.code}</h3>
-              <button onClick={() => setShowAddStudentModal(null)} className="text-slate-400 hover:text-slate-700">
+              <h3 className="text-base font-extrabold text-[#102A43]">Criar Nova Atividade: {showAddActivityModal.code}</h3>
+              <button onClick={() => setShowAddActivityModal(null)} className="text-slate-400 hover:text-slate-700">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddStudentSubmit} className="space-y-4 text-xs">
-              <div className="space-y-1.5 bh-1">
-                <label className="font-bold text-slate-500 uppercase">Nome Completo</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Pedro Alvares"
-                  value={newStudentName}
-                  onChange={(e) => setNewStudentName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50 focus:bg-white"
-                />
+            <form onSubmit={handleAddActivitySubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-500 uppercase">Título da Atividade</label>
+                  <input
+                    type="text"
+                    required
+                    value={actTitle}
+                    onChange={(e) => setActTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50 focus:bg-white"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-500 uppercase">Data de Entrega</label>
+                  <input
+                    type="date"
+                    required
+                    value={actDueDate}
+                    onChange={(e) => setActDueDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50 focus:bg-white"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-500 uppercase">Email Acadêmico</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="Ex: pedro@edu.com"
-                  value={newStudentEmail}
-                  onChange={(e) => setNewStudentEmail(e.target.value)}
+                <label className="font-bold text-slate-500 uppercase">Tipo de Atividade</label>
+                <select
+                  value={actType}
+                  onChange={(e) => setActType(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50"
+                >
+                  <option value="essay">Redação / Dissertação (Essay)</option>
+                  <option value="quiz">Questionário (Quiz)</option>
+                  <option value="drill">Exercício Prático (Drill)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-500 uppercase">Texto de Instrução ou Conteúdo</label>
+                <textarea
+                  rows={3}
+                  value={actText}
+                  onChange={(e) => setActText(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50 focus:bg-white"
+                  placeholder="Escreva as instruções da atividade..."
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase">Nota de Entrada (0-100)</label>
+                  <label className="font-bold text-slate-500 uppercase">URL da Imagem (Opcional)</label>
                   <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    required
-                    value={newStudentGrade}
-                    onChange={(e) => setNewStudentGrade(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50"
+                    type="url"
+                    value={actImage}
+                    onChange={(e) => setActImage(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50 focus:bg-white"
+                    placeholder="https://..."
                   />
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase">Frequência (%)</label>
+                  <label className="font-bold text-slate-500 uppercase">URL do Vídeo (Opcional)</label>
                   <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    required
-                    value={newStudentAtt}
-                    onChange={(e) => setNewStudentAtt(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50"
+                    type="url"
+                    value={actVideo}
+                    onChange={(e) => setActVideo(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50 focus:bg-white"
+                    placeholder="https://youtube.com/..."
                   />
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              {actType === 'quiz' && (
+                <div className="space-y-4 border-t border-slate-100 pt-4 mt-2">
+                  <div className="flex justify-between items-center">
+                    <label className="font-bold text-[#102A43] uppercase">Questões do Quiz</label>
+                    <button
+                      type="button"
+                      onClick={() => setActQuestions([...actQuestions, { question: '', options: ['', '', '', ''], answer: 0, explanation: '' }])}
+                      className="text-[10px] bg-indigo-50 text-indigo-600 font-bold px-2 py-1 rounded"
+                    >
+                      + Adicionar Questão
+                    </button>
+                  </div>
+                  {actQuestions.map((q, qIndex) => (
+                    <div key={qIndex} className="p-4 border border-slate-200 rounded-xl bg-slate-50 space-y-3">
+                      <div className="flex justify-between">
+                        <span className="font-bold text-slate-500">Questão {qIndex + 1}</span>
+                        <button type="button" onClick={() => setActQuestions(actQuestions.filter((_, i) => i !== qIndex))} className="text-red-500 font-bold text-[10px]">Remover</button>
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Pergunta..."
+                        value={q.question}
+                        onChange={(e) => {
+                          const newQ = [...actQuestions];
+                          newQ[qIndex].question = e.target.value;
+                          setActQuestions(newQ);
+                        }}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        {q.options.map((opt, oIndex) => (
+                          <div key={oIndex} className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name={`answer-${qIndex}`}
+                              checked={q.answer === oIndex}
+                              onChange={() => {
+                                const newQ = [...actQuestions];
+                                newQ[qIndex].answer = oIndex;
+                                setActQuestions(newQ);
+                              }}
+                            />
+                            <input
+                              type="text"
+                              required
+                              placeholder={`Opção ${oIndex + 1}`}
+                              value={opt}
+                              onChange={(e) => {
+                                const newQ = [...actQuestions];
+                                newQ[qIndex].options[oIndex] = e.target.value;
+                                setActQuestions(newQ);
+                              }}
+                              className="w-full px-2 py-1 border border-slate-200 rounded"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Explicação da resposta correta..."
+                        value={q.explanation}
+                        onChange={(e) => {
+                          const newQ = [...actQuestions];
+                          newQ[qIndex].explanation = e.target.value;
+                          setActQuestions(newQ);
+                        }}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[11px]"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-4 flex justify-end gap-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setShowAddStudentModal(null)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg"
+                  onClick={() => setShowAddActivityModal(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50"
                 >
                   Cancelar
                 </button>
@@ -636,7 +741,7 @@ export default function TeacherDashboard({
                   type="submit"
                   className="px-5 py-2 bg-indigo-600 hover:bg-[#102A43] text-white font-bold rounded-lg transition"
                 >
-                  Matricular
+                  Criar Atividade
                 </button>
               </div>
             </form>
