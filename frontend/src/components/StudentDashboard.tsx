@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, Award, CheckCircle, Clock, Volume2, Globe, Sparkles, Check, ArrowRight, X } from 'lucide-react';
+import { Course } from '../types';
 
 type StudentDashboardProps = {
   studentName: string;
+  studentId: string;
+  studentEmail: string;
+  courses: Course[];
   onUpdateMilestone?: (increment: number) => void;
 };
 
@@ -13,8 +17,21 @@ type QuizQuestion = {
   explanation: string;
 };
 
-export default function StudentDashboard({ studentName, onUpdateMilestone }: StudentDashboardProps) {
-  const [goalProgress, setGoalProgress] = useState(75);
+const getGradient = (lang: string) => {
+  switch (lang?.toLowerCase()) {
+    case 'espanhol':
+      return 'from-blue-900 to-[#102A43]';
+    case 'português':
+      return 'from-teal-950 to-emerald-900';
+    case 'francês':
+      return 'from-slate-900 to-indigo-950';
+    default:
+      return 'from-amber-950 to-amber-900';
+  }
+};
+
+export default function StudentDashboard({ studentName, studentId, studentEmail, courses, onUpdateMilestone }: StudentDashboardProps) {
+  const [goalProgress, setGoalProgress] = useState(0);
   const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
   const [activeQuiz, setActiveQuiz] = useState<{
     id: string;
@@ -28,13 +45,48 @@ export default function StudentDashboard({ studentName, onUpdateMilestone }: Stu
   const [quizScore, setQuizScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
 
-  // Dynamic state for enrolled course progress
-  const [courseProgresses, setCourseProgresses] = useState({
-    spanLit: 82,
-    envDyn: 45,
-    dataSci: 12,
-    globCiv: 98
-  });
+  useEffect(() => {
+    if (studentId) {
+      const fetchProgress = async () => {
+        try {
+          const res = await fetch(`/api/student/progress/${studentId}`);
+          const data = await res.json();
+          if (data.success && data.progress) {
+            setGoalProgress(data.progress.goal_progress ?? 0);
+            setCompletedQuizzes(data.progress.completed_quizzes ?? []);
+          }
+        } catch (e) {
+          console.error('Error fetching student progress:', e);
+        }
+      };
+      fetchProgress();
+    }
+  }, [studentId]);
+
+  const saveProgress = async (newGoal: number, newQuizzes: string[]) => {
+    try {
+      await fetch(`/api/student/progress/${studentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          goal_progress: newGoal,
+          completed_quizzes: newQuizzes
+        })
+      });
+    } catch (e) {
+      console.error('Error saving progress:', e);
+    }
+  };
+
+  const enrolledCourses = courses.filter((course) =>
+    course.studentsList?.some(
+      (s) =>
+        s.email?.toLowerCase() === studentEmail?.toLowerCase() ||
+        s.name?.toLowerCase() === studentName?.toLowerCase()
+    )
+  );
+
+  const activeCourse = enrolledCourses[0] || null;
 
   const launchQuiz = (id: string, title: string) => {
     let questions: QuizQuestion[] = [];
@@ -95,20 +147,21 @@ export default function StudentDashboard({ studentName, onUpdateMilestone }: Stu
       setSelectedOption(null);
     } else {
       setQuizFinished(true);
-      setCompletedQuizzes(prev => [...prev, activeQuiz.id]);
       
-      // Update overall progress and notify main context
-      setGoalProgress(prev => Math.min(prev + 10, 100));
+      const nextQuizzes = completedQuizzes.includes(activeQuiz.id)
+        ? completedQuizzes
+        : [...completedQuizzes, activeQuiz.id];
+      setCompletedQuizzes(nextQuizzes);
+      
+      const nextGoal = Math.min(goalProgress + 10, 100);
+      setGoalProgress(nextGoal);
+      
       if (onUpdateMilestone) {
         onUpdateMilestone(15);
       }
 
-      // Slightly increase one of the enrolled course progresses
-      if (activeQuiz.id === 'conjugation') {
-        setCourseProgresses(prev => ({ ...prev, spanLit: Math.min(prev.spanLit + 6, 100) }));
-      } else {
-        setCourseProgresses(prev => ({ ...prev, globCiv: Math.min(prev.globCiv + 5, 100) }));
-      }
+      // Save to database
+      saveProgress(nextGoal, nextQuizzes);
     }
   };
 
@@ -143,11 +196,16 @@ export default function StudentDashboard({ studentName, onUpdateMilestone }: Stu
 
           <div className="space-y-3 flex-1 text-center sm:text-left">
             <span className="inline-block px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full font-bold text-[10px] uppercase">
-              Certificação em Andamento
+              {activeCourse ? "Certificação em Andamento" : "Nenhuma certificação em andamento"}
             </span>
-            <h3 className="text-lg font-extrabold text-[#102A43] dark:text-white">Proficiência Intermediária B2</h3>
+            <h3 className="text-lg font-extrabold text-[#102A43] dark:text-white">
+              {activeCourse ? `Proficiência em ${activeCourse.language}` : "Sem Certificação Ativa"}
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-              Faltam apenas {100 - goalProgress > 0 ? Math.ceil((100 - goalProgress)/10) : 0} lições práticas rápidas para completar os objetivos de compreensão auditiva deste semestre.
+              {activeCourse 
+                ? `Você está cursando ${activeCourse.title} (${activeCourse.term}). Faltam apenas ${100 - goalProgress > 0 ? Math.ceil((100 - goalProgress)/10) : 0} lições práticas rápidas para completar os objetivos deste semestre.`
+                : "Você não possui nenhuma matrícula ativa. Fale com um professor para se matricular em um curso e iniciar sua jornada de aprendizado!"
+              }
             </p>
             <button 
               onClick={() => launchQuiz('general', 'Prática Diária de Vocabulário')}
@@ -217,91 +275,51 @@ export default function StudentDashboard({ studentName, onUpdateMilestone }: Stu
           <span className="text-xs text-slate-400 dark:text-slate-500">Progresso Geral Semestral</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Card 1 */}
-          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
-            <div className="h-24 bg-gradient-to-r from-blue-900 to-[#102A43] border-b-4 border-[#EFE4B0] flex items-end p-3 relative">
-              <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
-                Espanhol Avançado
-              </span>
-            </div>
-            <div className="p-4 space-y-3">
-              <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">Literatura e Espanhol Avançado</h4>
-              <div className="space-y-1.5 pt-1">
-                <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-400 dark:text-slate-500">Progresso</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{courseProgresses.spanLit}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                  <div className="bg-[#102A43] dark:bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.spanLit}%` }} />
-                </div>
-              </div>
-            </div>
+        {enrolledCourses.length === 0 ? (
+          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl p-8 text-center text-slate-500 dark:text-slate-400 font-medium">
+            Você não está matriculado em nenhuma matéria no momento.
           </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {enrolledCourses.map((course) => {
+              const studentInfo = course.studentsList?.find(
+                (s) =>
+                  s.email?.toLowerCase() === studentEmail?.toLowerCase() ||
+                  s.name?.toLowerCase() === studentName?.toLowerCase()
+              );
+              const progressPercent = studentInfo
+                ? Math.min(Math.round((studentInfo.completedLessons / 15) * 100), 100)
+                : 0;
 
-          {/* Card 2 */}
-          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
-            <div className="h-24 bg-gradient-to-r from-teal-950 to-emerald-900 border-b-4 border-[#EFE4B0] flex items-end p-3 relative">
-              <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
-                Meio Ambiente
-              </span>
-            </div>
-            <div className="p-4 space-y-3">
-              <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">Dinâmicas Ambientais do Planeta</h4>
-              <div className="space-y-1.5 pt-1">
-                <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-400 dark:text-slate-500">Progresso</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{courseProgresses.envDyn}%</span>
+              return (
+                <div key={course.id} className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
+                  <div className={`h-24 bg-gradient-to-r ${getGradient(course.language)} border-b-4 border-[#EFE4B0] flex items-end p-3 relative`}>
+                    <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
+                      {course.language}
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">{course.title}</h4>
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex justify-between text-[11px] font-bold">
+                        <span className="text-slate-400 dark:text-slate-500">Progresso ({studentInfo?.completedLessons ?? 0}/15 lições)</span>
+                        <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{progressPercent}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                        <div className="bg-[#102A43] dark:bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }} />
+                      </div>
+                    </div>
+                    {/* Additional Stats inside the card */}
+                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-white/10 pt-2.5 mt-2">
+                      <span>Nota: <span className="text-slate-700 dark:text-slate-300">{studentInfo?.grade ?? 0}/100</span></span>
+                      <span>Presença: <span className="text-slate-700 dark:text-slate-300">{studentInfo?.attendance ?? 0}%</span></span>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                  <div className="bg-[#102A43] dark:bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.envDyn}%` }} />
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
-
-          {/* Card 3 */}
-          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
-            <div className="h-24 bg-gradient-to-r from-slate-900 to-indigo-950 border-b-4 border-[#EFE4B0] flex items-end p-3 relative">
-              <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
-                Tecnologia
-              </span>
-            </div>
-            <div className="p-4 space-y-3">
-              <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">Fundamentos de Ciência de Dados</h4>
-              <div className="space-y-1.5 pt-1">
-                <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-400 dark:text-slate-500">Progresso</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{courseProgresses.dataSci}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                  <div className="bg-[#102A43] dark:bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.dataSci}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4 */}
-          <div className="bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition">
-            <div className="h-24 bg-gradient-to-r from-amber-950 to-amber-900 border-b-4 border-[#EFE4B0] flex items-end p-3 relative">
-              <span className="text-[10px] font-bold text-[#EFE4B0] uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded">
-                História Geral
-              </span>
-            </div>
-            <div className="p-4 space-y-3">
-              <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">Civilizações Globais Modernas</h4>
-              <div className="space-y-1.5 pt-1">
-                <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-400 dark:text-slate-500">Progresso</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{courseProgresses.globCiv}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                  <div className="bg-[#102A43] dark:bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${courseProgresses.globCiv}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </section>
 
       {/* MODAL: PRÁTICA INTERATIVA DE QUIZ */}

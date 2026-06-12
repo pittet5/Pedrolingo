@@ -16,7 +16,13 @@
     "start": "npm run start --workspace=backend",
     "lint": "npm run lint --workspace=frontend && npm run build --workspace=backend"
   },
+  "dependencies": {
+    "@google/genai": "^2.4.0",
+    "@supabase/supabase-js": "^2.48.0"
+  },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@vercel/node": "^5.0.0",
+    "concurrently": "^8.2.2",
+    "typescript": "~5.8.2"
   }
 }

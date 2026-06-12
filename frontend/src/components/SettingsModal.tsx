@@ -13,25 +13,83 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose, currentProfileId, onProfileDeleted }: SettingsModalProps) {
   const { theme, setTheme } = useTheme();
-  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [dbProfile, setDbProfile] = useState<any | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      const savedProfiles = localStorage.getItem('pedrolingo_profiles');
-      if (savedProfiles) {
-        setProfiles(JSON.parse(savedProfiles));
-      }
+    if (isOpen && currentProfileId) {
+      const fetchProfile = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const res = await fetch(`/api/auth/profile/${currentProfileId}`);
+          const data = await res.json();
+          if (data.success && data.profile) {
+            setDbProfile(data.profile);
+            setNotificationsEnabled(data.profile.notifications_enabled);
+            setAnimationsEnabled(data.profile.animations_enabled);
+          } else {
+            setError(data.error || 'Erro ao carregar perfil.');
+          }
+        } catch (err: any) {
+          console.error(err);
+          setError('Erro de rede ao carregar perfil.');
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProfile();
     }
-  }, [isOpen]);
+  }, [isOpen, currentProfileId]);
 
-  const handleDeleteProfile = (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este perfil? Esta ação não pode ser desfeita.")) {
-      const updatedProfiles = profiles.filter(p => p.id !== id);
-      setProfiles(updatedProfiles);
-      localStorage.setItem('pedrolingo_profiles', JSON.stringify(updatedProfiles));
-      onProfileDeleted(id);
+  const handleToggleNotifications = async () => {
+    const nextVal = !notificationsEnabled;
+    setNotificationsEnabled(nextVal);
+    try {
+      await fetch(`/api/auth/profile/${currentProfileId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notifications_enabled: nextVal })
+      });
+    } catch (err) {
+      console.error('Failed to update notifications preference:', err);
+    }
+  };
+
+  const handleToggleAnimations = async () => {
+    const nextVal = !animationsEnabled;
+    setAnimationsEnabled(nextVal);
+    try {
+      await fetch(`/api/auth/profile/${currentProfileId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ animations_enabled: nextVal })
+      });
+    } catch (err) {
+      console.error('Failed to update animations preference:', err);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (window.confirm("Tem certeza que deseja excluir esta conta? Esta ação é irreversível e apagará todos os seus dados.")) {
+      try {
+        const res = await fetch(`/api/auth/profile/${currentProfileId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          onProfileDeleted(currentProfileId);
+          onClose();
+        } else {
+          alert(data.error || 'Erro ao excluir conta.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Erro de rede ao excluir conta.');
+      }
     }
   };
 
@@ -118,7 +176,7 @@ export default function SettingsModal({ isOpen, onClose, currentProfileId, onPro
                   </div>
                 </div>
                 <button 
-                  onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                  onClick={handleToggleNotifications}
                   className={`w-12 h-6 rounded-full transition-colors relative ${notificationsEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}
                 >
                   <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${notificationsEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -136,7 +194,7 @@ export default function SettingsModal({ isOpen, onClose, currentProfileId, onPro
                   </div>
                 </div>
                 <button 
-                  onClick={() => setAnimationsEnabled(!animationsEnabled)}
+                  onClick={handleToggleAnimations}
                   className={`w-12 h-6 rounded-full transition-colors relative ${animationsEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}
                 >
                   <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${animationsEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -145,41 +203,41 @@ export default function SettingsModal({ isOpen, onClose, currentProfileId, onPro
             </div>
           </section>
 
-          {/* Manage Profiles */}
+          {/* Manage Account */}
           <section>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Gerenciar Perfis</h3>
-            <div className="space-y-3">
-              {profiles.map(profile => (
-                <div key={profile.id} className="flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
-                  <div className="flex items-center gap-4">
-                    <img src={profile.avatar} alt={profile.name} className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-700" />
-                    <div>
-                      <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        {profile.name}
-                        {profile.id === currentProfileId && (
-                          <span className="text-[10px] font-bold bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 px-2 py-0.5 rounded-full">Atual</span>
-                        )}
-                      </h4>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                        {profile.role === 'teacher' ? <GraduationCap className="w-3 h-3" /> : <Users className="w-3 h-3" />}
-                        {profile.role === 'teacher' ? 'Professor' : 'Aluno'}
-                      </p>
-                    </div>
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Conta do Usuário</h3>
+            {loading ? (
+              <div className="text-center py-4 text-slate-500 dark:text-slate-400">Carregando dados...</div>
+            ) : error ? (
+              <div className="text-center py-4 text-red-500 font-semibold">{error}</div>
+            ) : dbProfile ? (
+              <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+                <div className="flex items-center gap-4">
+                  <img src={dbProfile.avatar} alt={dbProfile.name} className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-700" />
+                  <div>
+                    <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                      {dbProfile.name}
+                      <span className="text-[10px] font-bold bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                        {dbProfile.role === 'teacher' ? 'Professor' : 'Aluno'}
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {dbProfile.email}
+                    </p>
                   </div>
-                  <button 
-                    onClick={() => handleDeleteProfile(profile.id)}
-                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition"
-                    title="Excluir Perfil"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
                 </div>
-              ))}
-              
-              {profiles.length === 0 && (
-                <p className="text-center text-slate-500 dark:text-slate-400 py-4">Nenhum perfil encontrado.</p>
-              )}
-            </div>
+                <button 
+                  onClick={handleDeleteAccount}
+                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition flex items-center gap-1.5 text-xs font-bold"
+                  title="Excluir Perfil"
+                >
+                  <Trash2 className="w-4.5 h-4.5" />
+                  <span>Excluir Conta</span>
+                </button>
+              </div>
+            ) : (
+              <p className="text-center text-slate-500 dark:text-slate-400 py-4">Nenhum perfil encontrado.</p>
+            )}
           </section>
           
         </div>

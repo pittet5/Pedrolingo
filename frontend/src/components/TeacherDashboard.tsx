@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Course, StudentSubmission, Student, Assignment } from '../types';
 import { 
   Users, BookOpen, Clock, Plus, Award, CheckCircle, 
@@ -31,6 +31,28 @@ export default function TeacherDashboard({
   
   // Selected course details
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
+  // Stats state
+  const [stats, setStats] = useState({ avgAttendance: 0, avgGrade: 0 });
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('/api/stats');
+      const data = await res.json();
+      if (data.success) {
+        setStats({
+          avgAttendance: data.avgAttendance,
+          avgGrade: data.avgGrade
+        });
+      }
+    } catch (e) {
+      console.error('Error fetching teacher stats:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, [courses, submissions]);
 
   // Form states
   const [newCourseName, setNewCourseName] = useState('');
@@ -131,7 +153,7 @@ export default function TeacherDashboard({
       </div>
 
       {/* Grid Status Quick Metric Tiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-5">
         <div className="bg-white dark:bg-[#0A1929] p-5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm flex items-center gap-4">
           <div className="p-3 bg-blue-50 dark:bg-blue-500/20 text-[#102A43] dark:text-blue-400 rounded-xl">
             <Users className="w-6 h-6" />
@@ -157,8 +179,18 @@ export default function TeacherDashboard({
             <Award className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider">Aproveitamento</span>
-            <span className="text-2xl font-extrabold text-[#102A43] dark:text-white">93.5%</span>
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider">Nota Média</span>
+            <span className="text-2xl font-extrabold text-[#102A43] dark:text-white">{stats.avgGrade}%</span>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-[#0A1929] p-5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
+            <Trophy className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider">Presença Média</span>
+            <span className="text-2xl font-extrabold text-[#102A43] dark:text-white">{stats.avgAttendance}%</span>
           </div>
         </div>
       </div>
@@ -347,27 +379,33 @@ export default function TeacherDashboard({
       {/* OVERALL PERFORMANCE CHARTS OR GRAPHICS */}
       <section className="bg-white dark:bg-[#0A1929] p-6 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm space-y-4">
         <h3 className="text-sm font-bold text-[#102A43] dark:text-white uppercase tracking-wider">Desempenho Semestral Geral</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between items-end">
-              <span className="font-bold text-slate-500">Média Geral de Frequência das Turmas</span>
-              <span className="text-sm font-extrabold text-[#102A43] dark:text-white">92%</span>
-            </div>
-            <div className="w-full bg-slate-105 h-2.5 rounded-full overflow-hidden">
-              <div className="bg-[#EFE4B0] h-full rounded-full" style={{ width: '92%' }}></div>
-            </div>
+        {courses.length === 0 ? (
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400 font-medium">
+            Sem dados do semestre
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between items-end">
+                <span className="font-bold text-slate-500">Média Geral de Frequência das Turmas</span>
+                <span className="text-sm font-extrabold text-[#102A43] dark:text-white">{stats.avgAttendance}%</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-white/5 h-2.5 rounded-full overflow-hidden">
+                <div className="bg-[#EFE4B0] h-full rounded-full transition-all duration-500" style={{ width: `${stats.avgAttendance}%` }}></div>
+              </div>
+            </div>
 
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between items-end">
-              <span className="font-bold text-slate-500">Média de Aprovação de Notas de Redações</span>
-              <span className="text-sm font-extrabold text-[#102A43] dark:text-white">85%</span>
-            </div>
-            <div className="w-full bg-slate-105 h-2.5 rounded-full overflow-hidden">
-              <div className="bg-[#102A43] h-full rounded-full" style={{ width: '85%' }}></div>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between items-end">
+                <span className="font-bold text-slate-500">Média de Aprovação de Notas de Redações</span>
+                <span className="text-sm font-extrabold text-[#102A43] dark:text-white">{stats.avgGrade}%</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-white/5 h-2.5 rounded-full overflow-hidden">
+                <div className="bg-[#102A43] h-full rounded-full transition-all duration-500" style={{ width: `${stats.avgGrade}%` }}></div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* MODAL: CORREÇÃO E ATRIBUIÇÃO DE NOTA */}

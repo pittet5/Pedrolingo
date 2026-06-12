@@ -8,7 +8,7 @@ import AICopilot from './components/AICopilot';
 import { 
   Users, BookOpen, Clock, Plus, Award, CheckCircle, 
   ChevronRight, Calendar, UserPlus, Sparkles, GraduationCap,
-  Play, Check, Heart, HelpCircle, Bell, ArrowLeftRight, Settings
+  Play, Check, Heart, HelpCircle, Bell, Settings
 } from 'lucide-react';
 
 export default function App() {
@@ -210,36 +210,19 @@ export default function App() {
           </span>
         </div>
 
-        {/* Dynamic Portal View Selector toggles */}
-        <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 p-1.5 rounded-xl border dark:border-white/10 transition-colors">
-          <button
-            onClick={() => {
-              setCurrentPortal('teacher');
-              triggerToast('Entrando no Painel do Docente...');
-            }}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-              currentPortal === 'teacher'
-                ? 'bg-white text-[#102A43] shadow-sm dark:bg-[#102A43] dark:text-white'
-                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            <GraduationCap className="w-4 h-4 shrink-0" />
-            Professor
-          </button>
-          <button
-            onClick={() => {
-              setCurrentPortal('student');
-              triggerToast('Entrando no Painel do Estudante...');
-            }}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-              currentPortal === 'student'
-                ? 'bg-white text-[#102A43] shadow-sm dark:bg-[#102A43] dark:text-white'
-                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4 shrink-0" />
-            Aluno
-          </button>
+        {/* Role badge — shows current portal, no switching allowed */}
+        <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 px-4 py-1.5 rounded-xl border dark:border-white/10 transition-colors">
+          {currentPortal === 'teacher' ? (
+            <>
+              <GraduationCap className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Portal do Professor</span>
+            </>
+          ) : (
+            <>
+              <Users className="w-4 h-4 text-blue-500 shrink-0" />
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Portal do Aluno</span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-3 text-slate-400 dark:text-slate-300">
@@ -290,6 +273,9 @@ export default function App() {
         ) : (
           <StudentDashboard
             studentName={currentProfile.name}
+            studentId={currentProfile.id}
+            studentEmail={currentProfile.email}
+            courses={courses}
             onUpdateMilestone={(inc) => triggerToast(`Parabéns! +${inc} pontos para a meta semanal!`)}
           />
         )}
