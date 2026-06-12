@@ -141,6 +141,26 @@ export default function App() {
     }
   };
 
+  const handleAddAssignment = async (assignment: Partial<Assignment>) => {
+    try {
+      const response = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assignment)
+      });
+      const res = await response.json();
+      if (res.success) {
+        await loadAllData();
+        triggerToast(`Atividade "${assignment.title}" criada com sucesso!`);
+      } else {
+        throw new Error(res.error || 'Erro ao criar atividade');
+      }
+    } catch (e: any) {
+      console.error(e);
+      triggerToast(`Erro ao criar atividade: ${e.message}`);
+    }
+  };
+
   const handleAddMaterialFromAI = async (title: string, content: string) => {
     if (!selectedCourse) {
       triggerToast('Selecione um curso no painel para vincular este material!');
@@ -267,8 +287,8 @@ export default function App() {
             assignments={assignments}
             onAddCourse={handleAddCourse}
             onGradeSubmission={handleGradeSubmission}
-            onAddStudent={handleAddStudent}
             onSelectCourse={setSelectedCourse}
+            onAddAssignment={handleAddAssignment}
           />
         ) : (
           <StudentDashboard
@@ -276,6 +296,7 @@ export default function App() {
             studentId={currentProfile.id}
             studentEmail={currentProfile.email}
             courses={courses}
+            onEnroll={handleAddStudent}
             onUpdateMilestone={(inc) => triggerToast(`Parabéns! +${inc} pontos para a meta semanal!`)}
           />
         )}
