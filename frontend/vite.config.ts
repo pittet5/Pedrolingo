@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: process.env.APP_URL,
+        target: process.env.APP_URL || 'http://localhost:3000',
         changeOrigin: true,
       },
     },
