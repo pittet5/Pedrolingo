@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Course, StudentSubmission, Student, Assignment } from '../types';
-import { 
-  Users, BookOpen, Clock, Plus, Award, CheckCircle, 
+import {
+  Users, BookOpen, Clock, Plus, Award, CheckCircle,
   ChevronRight, Calendar, UserPlus, FileText, Check, Trophy, X
 } from 'lucide-react';
 
@@ -12,21 +12,23 @@ type TeacherDashboardProps = {
   onGradeSubmission: (subId: string, score: number, feedback: string) => void;
   onSelectCourse: (course: Course | null) => void;
   onAddAssignment?: (assignment: Partial<Assignment>) => void;
+  onAddCourse?: (newCourse: Course) => void;
 };
 
 export default function TeacherDashboard({
   courses,
   submissions,
-  onAddCourse,
+  assignments,
   onGradeSubmission,
   onSelectCourse,
-  onAddAssignment
+  onAddAssignment,
+  onAddCourse
 }: TeacherDashboardProps) {
   // Modal states
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState<StudentSubmission | null>(null);
   const [showAddActivityModal, setShowAddActivityModal] = useState<Course | null>(null);
-  
+
   // Selected course details
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
@@ -68,7 +70,7 @@ export default function TeacherDashboard({
   const [actText, setActText] = useState('');
   const [actImage, setActImage] = useState('');
   const [actVideo, setActVideo] = useState('');
-  const [actQuestions, setActQuestions] = useState<{question: string, options: string[], answer: number, explanation: string}[]>([]);
+  const [actQuestions, setActQuestions] = useState<{ question: string, options: string[], answer: number, explanation: string }[]>([]);
 
   // Course selection handler
   const handleCourseClick = (course: Course) => {
@@ -94,7 +96,7 @@ export default function TeacherDashboard({
       averageGrade: 'A'
     };
 
-    onAddCourse(newCourse);
+    onAddCourse?.(newCourse);
     setNewCourseName('');
     setNewCourseCode('');
     setShowAddCourseModal(false);
@@ -206,7 +208,7 @@ export default function TeacherDashboard({
 
       {/* Bento Layout: Main Active Courses & Side Pending Grading Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
+
         {/* Course management block */}
         <section className="lg:col-span-8 space-y-6">
           <div className="flex justify-between items-center">
@@ -226,9 +228,8 @@ export default function TeacherDashboard({
                 <div
                   key={course.id}
                   onClick={() => handleCourseClick(course)}
-                  className={`bg-white dark:bg-[#0A1929] rounded-2xl p-5 border cursor-pointer transition-all duration-300 relative overflow-hidden group hover:shadow-md ${
-                    isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100 dark:border-white/10'
-                  }`}
+                  className={`bg-white dark:bg-[#0A1929] rounded-2xl p-5 border cursor-pointer transition-all duration-300 relative overflow-hidden group hover:shadow-md ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100 dark:border-white/10'
+                    }`}
                 >
                   <div className="absolute top-0 right-0 p-3">
                     <span className="text-[10px] bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-300 font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
@@ -283,7 +284,8 @@ export default function TeacherDashboard({
                           <span className="px-2 py-0.5 bg-blue-50 text-blue-600 font-bold rounded uppercase text-[10px]">
                             {currentCourse.code}
                           </span>
-                        <p className="text-xs text-slate-400 mt-0.5">Gestão acadêmica do Semestre • {currentCourse.language}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">Gestão acadêmica do Semestre • {currentCourse.language}</p>
+                        </div>
                       </div>
                       <button
                         onClick={() => {
