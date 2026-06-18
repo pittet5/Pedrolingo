@@ -29,7 +29,7 @@ const AVATARS = [
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Barcelos&backgroundColor=102c54',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Lucas&backgroundColor=592321',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo&backgroundColor=3f888f',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Andreas&backgroundColor=256d7B',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Andreas&backgroundColor=256d7b',
 ];
 
 type View = 'welcome' | 'login' | 'register' | 'verify';
