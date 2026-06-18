@@ -18,14 +18,16 @@ interface LoginScreenProps {
 }
 
 const AVATARS = [
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=c0aede',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex&backgroundColor=ffdfbf',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Pedro&backgroundColor=b6e3f4',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Anna&backgroundColor=c0aede',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Arthur&backgroundColor=ffdfbf',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Kauan&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Adriano&backgroundColor=c0aede',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo&backgroundColor=c0aede',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana&backgroundColor=ffdfbf',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Adrian&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Borba&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Oliveira&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Barcelos&backgroundColor=c0aede',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Lucas&backgroundColor=b6e3f4',
 ];
 
 type View = 'welcome' | 'login' | 'register' | 'verify';
