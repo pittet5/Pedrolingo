@@ -39,7 +39,7 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
     title: string;
     questions: QuizQuestion[];
   } | null>(null);
-  const [activeMedia, setActiveMedia] = useState<{text?: string, imageUrl?: string, videoUrl?: string} | null>(null);
+  const [activeMedia, setActiveMedia] = useState<{ text?: string, imageUrl?: string, videoUrl?: string } | null>(null);
 
   // Quiz completion flows
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -109,7 +109,35 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
     (course) => !enrolledCourses.some((ec) => ec.id === course.id)
   );
 
-  const activeCourse = enrolledCourses[0] || null;
+  // Assignments that belong to enrolled courses
+  const enrolledAssignments = assignments.filter((a) =>
+    enrolledCourses.some((c) => c.id === a.courseId)
+  );
+
+  // The last enrolled course that has at least one assignment (most recent activity)
+  const activeCourse = (() => {
+    for (let i = enrolledCourses.length - 1; i >= 0; i--) {
+      const course = enrolledCourses[i];
+      if (enrolledAssignments.some((a) => a.courseId === course.id)) {
+        return course;
+      }
+    }
+    return null;
+  })();
+
+  // % of completed quizzes out of total assignments across all enrolled courses
+  const activityProgress = enrolledAssignments.length > 0
+    ? Math.round((completedQuizzes.filter((qId) =>
+      enrolledAssignments.some((a) => a.id === qId)
+    ).length / enrolledAssignments.length) * 100)
+    : 0;
+
+  // The first pending (not yet completed) assignment in the active course
+  const nextAssignment = activeCourse
+    ? enrolledAssignments.find(
+      (a) => a.courseId === activeCourse.id && !completedQuizzes.includes(a.id)
+    ) ?? enrolledAssignments.find((a) => a.courseId === activeCourse.id)
+    : null;
 
   const launchQuiz = (assignment: Assignment) => {
     let questions: QuizQuestion[] = [];
@@ -188,15 +216,15 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
       setSelectedOption(null);
     } else {
       setQuizFinished(true);
-      
+
       const nextQuizzes = completedQuizzes.includes(activeQuiz.id)
         ? completedQuizzes
         : [...completedQuizzes, activeQuiz.id];
       setCompletedQuizzes(nextQuizzes);
-      
+
       const nextGoal = Math.min(goalProgress + 10, 100);
       setGoalProgress(nextGoal);
-      
+
       if (onUpdateMilestone) {
         onUpdateMilestone(15);
       }
@@ -216,44 +244,79 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
 
       {/* Learning Milestone & Continue Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-        
+
         {/* Progress Circle & Goal Description */}
         <div className="md:col-span-8 bg-white dark:bg-[#0A1929] border border-slate-150 dark:border-white/10 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 shadow-sm hover:shadow-md transition">
           {/* Custom Conic Progress Circle wrapper */}
           <div className="relative w-40 h-40 shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/5">
             {/* outer visual indicator ring */}
-            <div 
+            <div
               className="absolute inset-0 rounded-full transition-all duration-700"
               style={{
-                background: `conic-gradient(#102A43 ${goalProgress * 3.6}deg, transparent 0deg)`
+                background: `conic-gradient(#102A43 ${activityProgress * 3.6}deg, transparent 0deg)`
               }}
             />
             {/* Inner background mask */}
             <div className="absolute inset-3 bg-white dark:bg-[#0A1929] rounded-full flex flex-col items-center justify-center shadow-inner z-10">
-              <span className="text-3xl font-extrabold text-[#102A43] dark:text-white">{goalProgress}%</span>
-              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Meta Semanal</span>
+              <span className="text-3xl font-extrabold text-[#102A43] dark:text-white">{activityProgress}%</span>
+              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Atividades</span>
             </div>
           </div>
 
           <div className="space-y-3 flex-1 text-center sm:text-left">
-            <span className="inline-block px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full font-bold text-[10px] uppercase">
-              {activeCourse ? "Certificação em Andamento" : "Nenhuma certificação em andamento"}
-            </span>
-            <h3 className="text-lg font-extrabold text-[#102A43] dark:text-white">
-              {activeCourse ? `Proficiência em ${activeCourse.language}` : "Sem Certificação Ativa"}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-              {activeCourse 
-                ? `Você está cursando ${activeCourse.title} (${activeCourse.term}). Faltam apenas ${100 - goalProgress > 0 ? Math.ceil((100 - goalProgress)/10) : 0} lições práticas rápidas para completar os objetivos deste semestre.`
-                : "Você não possui nenhuma matrícula ativa. Fale com um professor para se matricular em um curso e iniciar sua jornada de aprendizado!"
-              }
-            </p>
-            <button 
-              onClick={() => launchQuiz({ id: 'general', title: 'Prática Diária de Vocabulário', description: '' } as Assignment)}
-              className="bg-[#102A43] dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:opacity-90 active:scale-95 transition cursor-pointer"
-            >
-              Continuar Jornada
-            </button>
+            {enrolledAssignments.length === 0 ? (
+              // Empty state: no assignments in any enrolled course
+              <>
+                <span className="inline-block px-2.5 py-0.5 bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full font-bold text-[10px] uppercase">
+                  Nenhuma atividade disponível
+                </span>
+                <h3 className="text-lg font-extrabold text-[#102A43] dark:text-white">
+                  Tudo em dia por aqui! 🌟
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                  Você não possui atividades pendentes nos seus cursos no momento. Que tal explorar novos conteúdos ou descansar as energias para amanhã?
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                  <button
+                    onClick={() => {
+                      document.getElementById('available-courses-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="bg-[#102A43] dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:opacity-90 active:scale-95 transition cursor-pointer"
+                  >
+                    🔍 Buscar Cursos
+                  </button>
+                  <button
+                    className="border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 px-5 py-2.5 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-white/5 active:scale-95 transition cursor-pointer"
+                    onClick={() => { }}
+                  >
+                    😴 Guardar Energias
+                  </button>
+                </div>
+              </>
+            ) : (
+              // Normal state: show active course info
+              <>
+                <span className="inline-block px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full font-bold text-[10px] uppercase">
+                  {activeCourse ? "Curso em Andamento" : "Atividade Disponível"}
+                </span>
+                <h3 className="text-lg font-extrabold text-[#102A43] dark:text-white">
+                  {activeCourse ? `Proficiência em ${activeCourse.language}` : "Atividade Pendente"}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                  {activeCourse
+                    ? `Você está cursando ${activeCourse.title} (${activeCourse.term}). Você completou ${activityProgress}% das atividades dos seus cursos — continue assim!`
+                    : `Você tem ${enrolledAssignments.filter(a => !completedQuizzes.includes(a.id)).length} atividade(s) pendente(s). Clique para começar!`
+                  }
+                </p>
+                <button
+                  onClick={() => nextAssignment && launchQuiz(nextAssignment)}
+                  disabled={!nextAssignment}
+                  className="bg-[#102A43] dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:opacity-90 active:scale-95 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {nextAssignment ? `▶ ${nextAssignment.title}` : 'Tudo Concluído ✓'}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -267,7 +330,7 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
           <div className="space-y-3 flex-1">
             {assignments.filter(a => enrolledCourses.some(c => c.id === a.courseId)).length > 0 ? (
               assignments.filter(a => enrolledCourses.some(c => c.id === a.courseId)).map((assignment) => (
-                <div 
+                <div
                   key={assignment.id}
                   onClick={() => launchQuiz(assignment)}
                   className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-[#050C14] hover:bg-amber-50/40 dark:hover:bg-white/5 rounded-xl cursor-pointer transition border border-transparent hover:border-amber-200/40 dark:hover:border-white/10 group text-left w-full"
@@ -351,7 +414,7 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
       </section>
 
       {/* Available Courses Section */}
-      <section className="space-y-5">
+      <section id="available-courses-section" className="space-y-5">
         <div className="flex justify-between items-center pb-2">
           <h3 className="text-lg font-bold text-[#102A43] dark:text-white flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
@@ -379,8 +442,8 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
                     <p className="text-xs text-slate-500 mt-1">{course.code} • {course.term}</p>
                     <p className="text-[10px] text-slate-400 mt-2 font-medium">{course.studentsCount} alunos matriculados</p>
                   </div>
-                  
-                  <button 
+
+                  <button
                     onClick={() => {
                       if (onEnroll) {
                         onEnroll(course.id, {
@@ -437,9 +500,9 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
                     )}
                     {activeMedia.videoUrl && (
                       <div className="rounded-lg overflow-hidden border border-slate-200 aspect-video">
-                        <iframe 
-                          src={activeMedia.videoUrl.replace('watch?v=', 'embed/')} 
-                          className="w-full h-full" 
+                        <iframe
+                          src={activeMedia.videoUrl.replace('watch?v=', 'embed/')}
+                          className="w-full h-full"
                           allowFullScreen
                         ></iframe>
                       </div>
@@ -463,7 +526,7 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
                       {activeQuiz.questions[currentQuestionIndex].options.map((option, idx) => {
                         const isSelected = selectedOption === idx;
                         const isCorrect = idx === activeQuiz.questions[currentQuestionIndex].answer;
-                        
+
                         let btnStyle = 'border-slate-150 bg-white hover:bg-slate-50';
                         if (selectedOption !== null) {
                           if (isSelected) {
