@@ -17,6 +17,7 @@ export interface Course {
   averageAttendance: number;
   averageGrade: string;
   studentsList: Student[];
+  teacherId?: string;
 }
 
 export interface Assignment {
@@ -28,6 +29,8 @@ export interface Assignment {
   type: 'quiz' | 'essay' | 'drill';
   maxScore: number;
   description: string;
+  requiresFileUpload?: boolean;
+  fileUploadDescription?: string;
 }
 
 export interface StudentSubmission {
