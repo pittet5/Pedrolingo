@@ -297,14 +297,18 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
               // Normal state: show active course info
               <>
                 <span className="inline-block px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full font-bold text-[10px] uppercase">
-                  {activeCourse ? "Curso em Andamento" : "Atividade Disponível"}
+                  {activeCourse ? `${activeCourse.code} · ${activeCourse.term}` : "Atividade Disponível"}
                 </span>
                 <h3 className="text-lg font-extrabold text-[#102A43] dark:text-white">
-                  {activeCourse ? `Proficiência em ${activeCourse.language}` : "Atividade Pendente"}
+                  {activeCourse
+                    ? nextAssignment
+                      ? nextAssignment.title
+                      : activeCourse.title
+                    : "Atividade Pendente"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
                   {activeCourse
-                    ? `Você está cursando ${activeCourse.title} (${activeCourse.term}). Você completou ${activityProgress}% das atividades dos seus cursos — continue assim!`
+                    ? `${activeCourse.title} — Você completou ${activityProgress}% das atividades dos seus cursos. Continue assim!`
                     : `Você tem ${enrolledAssignments.filter(a => !completedQuizzes.includes(a.id)).length} atividade(s) pendente(s). Clique para começar!`
                   }
                 </p>
