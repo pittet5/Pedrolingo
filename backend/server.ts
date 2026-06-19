@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
+import multer from 'multer';
 import { supabase } from './supabaseClient.js';
 import {
   INITIAL_COURSES,
@@ -16,6 +17,12 @@ import {
   Assignment,
   StudentSubmission
 } from './initialData.js';
+
+// Multer: store uploads in memory (max 100MB per file)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +76,7 @@ function mapDBCourse(c: any): Course {
     studentsCount: c.students_count ?? 0,
     averageAttendance: c.average_attendance ?? 0,
     averageGrade: c.average_grade ?? 'N/A',
+    teacherId: c.teacher_id ?? undefined,
     studentsList: (c.studentsList || []).map((s: any) => ({
       id: s.id,
       name: s.name,
@@ -89,7 +97,9 @@ function mapDBAssignment(a: any): Assignment {
     dueDate: a.due_date,
     type: a.type,
     maxScore: a.max_score,
-    description: a.description
+    description: a.description,
+    requiresFileUpload: a.requires_file_upload ?? false,
+    fileUploadDescription: a.file_upload_description ?? undefined
   };
 }
 
@@ -545,19 +555,34 @@ app.get('/api/courses', async (req, res) => {
 // POST /api/courses
 app.post('/api/courses', async (req, res) => {
   try {
-    const body: Course = req.body;
+    const body: Course & { teacherId?: string } = req.body;
     if (supabase) {
+      // Enforce: one active course per teacher
+      if (body.teacherId) {
+        const { data: existing } = await supabase
+          .from('courses')
+          .select('id, title')
+          .eq('teacher_id', body.teacherId)
+          .maybeSingle();
+        if (existing) {
+          return res.status(409).json({
+            success: false,
+            error: `Você já possui um curso ativo: "${existing.title}". Cada professor pode ter apenas um curso ativo por vez.`
+          });
+        }
+      }
+
       const { data, error } = await supabase
         .from('courses')
         .insert({
-          // Do NOT pass id — let Supabase generate a valid UUID automatically
           code: body.code,
           title: body.title,
           language: body.language,
           term: body.term,
           students_count: body.studentsCount ?? 0,
           average_attendance: body.averageAttendance ?? 0,
-          average_grade: body.averageGrade ?? 'N/A'
+          average_grade: body.averageGrade ?? 'N/A',
+          teacher_id: body.teacherId ?? null
         })
         .select()
         .single();
@@ -566,7 +591,6 @@ app.post('/api/courses', async (req, res) => {
       // If students list was provided in body, insert them too
       if (body.studentsList && body.studentsList.length > 0) {
         const studentsToInsert = body.studentsList.map((s: Student) => ({
-          // Do NOT pass id — let Supabase generate a valid UUID automatically
           course_id: data.id,
           name: s.name,
           email: s.email,
@@ -577,8 +601,18 @@ app.post('/api/courses', async (req, res) => {
         await supabase.from('students').insert(studentsToInsert);
       }
 
-      res.json({ success: true, data });
+      res.json({ success: true, data: mapDBCourse(data) });
     } else {
+      // In-memory: one active course per teacher
+      if (body.teacherId) {
+        const existing = memoryCourses.find(c => (c as any).teacherId === body.teacherId);
+        if (existing) {
+          return res.status(409).json({
+            success: false,
+            error: `Você já possui um curso ativo: "${existing.title}". Cada professor pode ter apenas um curso ativo por vez.`
+          });
+        }
+      }
       const newCourse = { ...body, id: body.id || `course-${Date.now()}` };
       memoryCourses.push(newCourse);
       res.json({ success: true, data: newCourse });
@@ -666,7 +700,9 @@ app.post('/api/assignments', async (req, res) => {
           due_date: body.dueDate,
           type: body.type,
           max_score: body.maxScore,
-          description: body.description
+          description: body.description,
+          requires_file_upload: body.requiresFileUpload ?? false,
+          file_upload_description: body.fileUploadDescription ?? null
         })
         .select()
         .single();
@@ -682,6 +718,271 @@ app.post('/api/assignments', async (req, res) => {
     res.status(500).json({ success: false, error: e.message });
   }
 });
+
+// ─── TEACHER INFO ────────────────────────────────────────────────────────────
+
+// GET /api/courses/:courseId/teacher — fetch teacher profile for a course
+app.get('/api/courses/:courseId/teacher', async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    if (!supabase) return res.status(503).json({ success: false, error: 'Banco de dados não configurado.' });
+
+    const { data: course, error: courseErr } = await supabase
+      .from('courses')
+      .select('teacher_id')
+      .eq('id', courseId)
+      .maybeSingle();
+    if (courseErr) throw courseErr;
+    if (!course?.teacher_id) return res.json({ success: true, teacher: null });
+
+    const { data: teacher, error: teacherErr } = await supabase
+      .from('user_profiles')
+      .select('id, name, email, avatar')
+      .eq('id', course.teacher_id)
+      .maybeSingle();
+    if (teacherErr) throw teacherErr;
+
+    res.json({ success: true, teacher });
+  } catch (e: any) {
+    console.error('GET /api/courses/:courseId/teacher error:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ─── CHAT ────────────────────────────────────────────────────────────────────
+
+// GET /api/chat/:courseId/:studentId — fetch messages for a student-teacher conversation
+app.get('/api/chat/:courseId/:studentId', async (req, res) => {
+  try {
+    const { courseId, studentId } = req.params;
+    if (!supabase) return res.json({ success: true, messages: [] });
+
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('course_id', courseId)
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+
+    const messages = (data || []).map((m: any) => ({
+      id: m.id,
+      courseId: m.course_id,
+      studentId: m.student_id,
+      senderId: m.sender_id,
+      senderRole: m.sender_role,
+      senderName: m.sender_name,
+      message: m.message,
+      createdAt: m.created_at
+    }));
+    res.json({ success: true, messages });
+  } catch (e: any) {
+    console.error('GET /api/chat error:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// POST /api/chat/:courseId/:studentId — send a chat message
+app.post('/api/chat/:courseId/:studentId', async (req, res) => {
+  try {
+    const { courseId, studentId } = req.params;
+    const { senderId, senderRole, senderName, message } = req.body;
+    if (!message?.trim()) return res.status(400).json({ success: false, error: 'Mensagem não pode ser vazia.' });
+    if (!supabase) return res.status(503).json({ success: false, error: 'Banco de dados não configurado.' });
+
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert({ course_id: courseId, student_id: studentId, sender_id: senderId, sender_role: senderRole, sender_name: senderName, message: message.trim() })
+      .select()
+      .single();
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: {
+        id: data.id,
+        courseId: data.course_id,
+        studentId: data.student_id,
+        senderId: data.sender_id,
+        senderRole: data.sender_role,
+        senderName: data.sender_name,
+        message: data.message,
+        createdAt: data.created_at
+      }
+    });
+  } catch (e: any) {
+    console.error('POST /api/chat error:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ─── FILE UPLOAD ─────────────────────────────────────────────────────────────
+
+// POST /api/assignments/:assignmentId/upload — upload a file for an assignment (max 100MB)
+app.post('/api/assignments/:assignmentId/upload', upload.single('file'), async (req, res) => {
+  try {
+    const { assignmentId } = req.params;
+    const { studentId } = req.body;
+
+    if (!req.file) return res.status(400).json({ success: false, error: 'Nenhum arquivo enviado.' });
+    if (!studentId) return res.status(400).json({ success: false, error: 'studentId é obrigatório.' });
+    if (!supabase) return res.status(503).json({ success: false, error: 'Banco de dados não configurado.' });
+
+    const file = req.file;
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `assignments/${assignmentId}/${studentId}/${Date.now()}_${safeName}`;
+
+    // Upload to Supabase Storage bucket "assignment-files"
+    const { data: storageData, error: storageErr } = await supabase.storage
+      .from('assignment-files')
+      .upload(storagePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false
+      });
+    if (storageErr) throw storageErr;
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('assignment-files')
+      .getPublicUrl(storagePath);
+
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Save metadata to DB
+    const { data: fileMeta, error: metaErr } = await supabase
+      .from('assignment_files')
+      .insert({
+        assignment_id: assignmentId,
+        student_id: studentId,
+        file_name: file.originalname,
+        file_url: urlData.publicUrl,
+        file_size: file.size,
+        mime_type: file.mimetype,
+        expires_at: expiresAt
+      })
+      .select()
+      .single();
+    if (metaErr) throw metaErr;
+
+    res.json({
+      success: true,
+      file: {
+        id: fileMeta.id,
+        assignmentId: fileMeta.assignment_id,
+        studentId: fileMeta.student_id,
+        fileName: fileMeta.file_name,
+        fileUrl: fileMeta.file_url,
+        fileSize: fileMeta.file_size,
+        mimeType: fileMeta.mime_type,
+        uploadedAt: fileMeta.uploaded_at,
+        expiresAt: fileMeta.expires_at
+      }
+    });
+  } catch (e: any) {
+    console.error('POST /api/assignments/:assignmentId/upload error:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/assignments/:assignmentId/files/:studentId — list uploaded files for an assignment
+app.get('/api/assignments/:assignmentId/files/:studentId', async (req, res) => {
+  try {
+    const { assignmentId, studentId } = req.params;
+    if (!supabase) return res.json({ success: true, files: [] });
+
+    const { data, error } = await supabase
+      .from('assignment_files')
+      .select('*')
+      .eq('assignment_id', assignmentId)
+      .eq('student_id', studentId)
+      .order('uploaded_at', { ascending: false });
+    if (error) throw error;
+
+    const files = (data || []).map((f: any) => ({
+      id: f.id,
+      assignmentId: f.assignment_id,
+      studentId: f.student_id,
+      fileName: f.file_name,
+      fileUrl: f.file_url,
+      fileSize: f.file_size,
+      mimeType: f.mime_type,
+      uploadedAt: f.uploaded_at,
+      expiresAt: f.expires_at
+    }));
+    res.json({ success: true, files });
+  } catch (e: any) {
+    console.error('GET /api/assignments/:assignmentId/files/:studentId error:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// DELETE /api/files/cleanup — remove expired files from storage and DB
+app.delete('/api/files/cleanup', async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ success: false, error: 'Banco de dados não configurado.' });
+
+    const now = new Date().toISOString();
+    const { data: expired, error: fetchErr } = await supabase
+      .from('assignment_files')
+      .select('id, file_url')
+      .lt('expires_at', now);
+    if (fetchErr) throw fetchErr;
+    if (!expired || expired.length === 0) return res.json({ success: true, deleted: 0 });
+
+    // Extract storage paths from URLs
+    for (const f of expired) {
+      try {
+        const url = new URL(f.file_url);
+        // Path after "/storage/v1/object/public/assignment-files/"
+        const prefix = '/storage/v1/object/public/assignment-files/';
+        const storagePath = url.pathname.startsWith(prefix)
+          ? url.pathname.slice(prefix.length)
+          : null;
+        if (storagePath) {
+          await supabase.storage.from('assignment-files').remove([storagePath]);
+        }
+      } catch (_) { /* ignore individual errors */ }
+    }
+
+    const ids = expired.map((f: any) => f.id);
+    const { error: delErr } = await supabase.from('assignment_files').delete().in('id', ids);
+    if (delErr) throw delErr;
+
+    res.json({ success: true, deleted: ids.length });
+  } catch (e: any) {
+    console.error('DELETE /api/files/cleanup error:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// Internal cleanup: run on server start and every 24h
+const runFileCleanup = async () => {
+  if (!supabase) return;
+  try {
+    const now = new Date().toISOString();
+    const { data: expired } = await supabase
+      .from('assignment_files')
+      .select('id, file_url')
+      .lt('expires_at', now);
+    if (!expired || expired.length === 0) return;
+    for (const f of expired) {
+      try {
+        const url = new URL(f.file_url);
+        const prefix = '/storage/v1/object/public/assignment-files/';
+        const storagePath = url.pathname.startsWith(prefix) ? url.pathname.slice(prefix.length) : null;
+        if (storagePath) await supabase.storage.from('assignment-files').remove([storagePath]);
+      } catch (_) { /* ignore */ }
+    }
+    const ids = expired.map((f: any) => f.id);
+    await supabase.from('assignment_files').delete().in('id', ids);
+    console.log(`[cleanup] Removed ${ids.length} expired file(s).`);
+  } catch (e) {
+    console.error('[cleanup] Error during file cleanup:', e);
+  }
+};
+// Run cleanup on startup and every 24h
+runFileCleanup();
+setInterval(runFileCleanup, 24 * 60 * 60 * 1000);
 
 // GET /api/submissions
 app.get('/api/submissions', async (req, res) => {

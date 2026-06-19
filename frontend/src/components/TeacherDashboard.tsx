@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Course, StudentSubmission, Student, Assignment } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Course, StudentSubmission, Student, Assignment, ChatMessage } from '../types';
 import {
   Users, BookOpen, Clock, Plus, Award, CheckCircle,
-  ChevronRight, Calendar, UserPlus, FileText, Check, Trophy, X
+  ChevronRight, Calendar, UserPlus, FileText, Check, Trophy, X,
+  MessageCircle, Upload, Send
 } from 'lucide-react';
 
 type TeacherDashboardProps = {
   courses: Course[];
   submissions: StudentSubmission[];
   assignments: Assignment[];
+  teacherId?: string;
+  teacherName?: string;
   onGradeSubmission: (subId: string, score: number, feedback: string) => void;
   onSelectCourse: (course: Course | null) => void;
   onAddAssignment?: (assignment: Partial<Assignment>) => void;
@@ -19,6 +22,8 @@ export default function TeacherDashboard({
   courses,
   submissions,
   assignments,
+  teacherId,
+  teacherName,
   onGradeSubmission,
   onSelectCourse,
   onAddAssignment,
@@ -71,6 +76,16 @@ export default function TeacherDashboard({
   const [actImage, setActImage] = useState('');
   const [actVideo, setActVideo] = useState('');
   const [actQuestions, setActQuestions] = useState<{ question: string, options: string[], answer: number, explanation: string }[]>([]);
+  const [actRequiresFile, setActRequiresFile] = useState(false);
+  const [actFileDescription, setActFileDescription] = useState('');
+
+  // Chat state
+  const [chatModal, setChatModal] = useState<{ courseId: string; studentId: string; studentName: string } | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Course selection handler
   const handleCourseClick = (course: Course) => {
@@ -79,12 +94,56 @@ export default function TeacherDashboard({
     onSelectCourse(id ? course : null);
   };
 
+  // Chat helpers
+  const fetchChatMessages = async (courseId: string, studentId: string) => {
+    try {
+      const res = await fetch(`/api/chat/${courseId}/${studentId}`);
+      const data = await res.json();
+      if (data.success) setChatMessages(data.messages || []);
+    } catch (e) { /* silent */ }
+  };
+
+  useEffect(() => {
+    if (chatModal) {
+      fetchChatMessages(chatModal.courseId, chatModal.studentId);
+      chatPollRef.current = setInterval(() => fetchChatMessages(chatModal.courseId, chatModal.studentId), 5000);
+      return () => { if (chatPollRef.current) clearInterval(chatPollRef.current); };
+    }
+  }, [chatModal]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const handleSendChatMessage = async () => {
+    if (!chatModal || !chatInput.trim() || !teacherId) return;
+    setChatSending(true);
+    try {
+      const res = await fetch(`/api/chat/${chatModal.courseId}/${chatModal.studentId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderId: teacherId,
+          senderRole: 'teacher',
+          senderName: teacherName || 'Professor',
+          message: chatInput.trim()
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setChatMessages(prev => [...prev, data.message]);
+        setChatInput('');
+      }
+    } catch (e) { /* silent */ }
+    setChatSending(false);
+  };
+
   // Add course submit
   const handleAddCourseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourseName || !newCourseCode) return;
 
-    const newCourse: Course = {
+    const newCourse: Course & { teacherId?: string } = {
       id: `course-${Date.now()}`,
       code: newCourseCode.toUpperCase().trim(),
       title: newCourseName,
@@ -93,10 +152,11 @@ export default function TeacherDashboard({
       studentsCount: 0,
       studentsList: [],
       averageAttendance: 100,
-      averageGrade: 'A'
+      averageGrade: 'A',
+      teacherId: teacherId // Auto-link to logged-in teacher
     };
 
-    onAddCourse?.(newCourse);
+    onAddCourse?.(newCourse as Course);
     setNewCourseName('');
     setNewCourseCode('');
     setShowAddCourseModal(false);
@@ -131,7 +191,9 @@ export default function TeacherDashboard({
       dueDate: actDueDate || new Date().toISOString().split('T')[0],
       type: actType,
       maxScore: 100,
-      description: JSON.stringify(payload)
+      description: JSON.stringify(payload),
+      requiresFileUpload: actRequiresFile,
+      fileUploadDescription: actRequiresFile ? actFileDescription : undefined
     });
 
     setShowAddActivityModal(null);
@@ -140,6 +202,8 @@ export default function TeacherDashboard({
     setActImage('');
     setActVideo('');
     setActQuestions([]);
+    setActRequiresFile(false);
+    setActFileDescription('');
   };
 
   // Calculate high level metrics
@@ -354,13 +418,7 @@ export default function TeacherDashboard({
               submissions.filter(s => !s.graded).map((sub) => (
                 <div
                   key={sub.id}
-                  onClick={() => {
-                    const assign = assignments.find(a => a.id === sub.assignmentId);
-                    setGradeScore(85);
-                    setGradeFeedback('');
-                    setShowGradeModal(sub);
-                  }}
-                  className="p-4 rounded-xl bg-[#EFE4B0]/10 border border-[#EFE4B0]/30 hover:bg-[#EFE4B0]/20 transition cursor-pointer hover:scale-[1.01]"
+                  className="p-4 rounded-xl bg-[#EFE4B0]/10 border border-[#EFE4B0]/30 hover:bg-[#EFE4B0]/20 transition"
                 >
                   <div className="flex justify-between items-start gap-2 mb-2">
                     <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 rounded">
@@ -372,9 +430,33 @@ export default function TeacherDashboard({
                   <h4 className="text-xs font-bold text-[#102A43] dark:text-white truncate-words">{sub.assignmentTitle}</h4>
                   <p className="text-[11px] text-slate-500 mt-2 font-medium">Aluno(a): <strong className="text-slate-700 dark:text-slate-300">{sub.studentName}</strong></p>
 
-                  <div className="mt-3 pt-2 border-t border-slate-100/50 flex justify-end items-center text-[10px] text-indigo-600 font-bold gap-1">
-                    <span>Atribuir Nota</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
+                  <div className="mt-3 pt-2 border-t border-slate-100/50 flex justify-between items-center gap-2">
+                    <button
+                      onClick={() => {
+                        // Find student ID for chat — look up in courses
+                        const course = courses.find(c => c.code === sub.courseCode);
+                        const studentInCourse = course?.studentsList?.find(s => s.name === sub.studentName);
+                        if (course && studentInCourse) {
+                          setChatMessages([]);
+                          setChatModal({ courseId: course.id, studentId: studentInCourse.id, studentName: sub.studentName });
+                        }
+                      }}
+                      className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-indigo-600 font-bold transition cursor-pointer"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      Chat
+                    </button>
+                    <button
+                      onClick={() => {
+                        setGradeScore(85);
+                        setGradeFeedback('');
+                        setShowGradeModal(sub);
+                      }}
+                      className="flex items-center gap-1 text-[10px] text-indigo-600 font-bold hover:underline cursor-pointer"
+                    >
+                      <span>Atribuir Nota</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))
@@ -655,6 +737,40 @@ export default function TeacherDashboard({
                 </div>
               </div>
 
+              {/* Requires file upload toggle */}
+              <div className="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-600 uppercase text-[11px] flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                    Requer Entrega de Documento
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setActRequiresFile(v => !v)}
+                    className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${
+                      actRequiresFile ? 'bg-indigo-600' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                      actRequiresFile ? 'translate-x-5' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+                {actRequiresFile && (
+                  <div className="space-y-1 pt-1">
+                    <label className="font-bold text-slate-500 uppercase text-[10px]">Descreva o documento esperado</label>
+                    <input
+                      type="text"
+                      required={actRequiresFile}
+                      placeholder="Ex: Projeto de final de curso (PDF), Imagem do trabalho..."
+                      value={actFileDescription}
+                      onChange={(e) => setActFileDescription(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-white text-[11px]"
+                    />
+                  </div>
+                )}
+              </div>
+
               {actType === 'quiz' && (
                 <div className="space-y-4 border-t border-slate-100 pt-4 mt-2">
                   <div className="flex justify-between items-center">
@@ -745,6 +861,67 @@ export default function TeacherDashboard({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CHAT COM ALUNO */}
+      {chatModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-100 animate-scale-up flex flex-col" style={{ maxHeight: '85vh' }}>
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-slate-100 p-4 shrink-0">
+              <div>
+                <h3 className="text-sm font-extrabold text-[#102A43]">Chat com Aluno</h3>
+                <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{chatModal.studentName}</p>
+              </div>
+              <button onClick={() => { setChatModal(null); setChatMessages([]); if (chatPollRef.current) clearInterval(chatPollRef.current); }} className="text-slate-400 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+              {chatMessages.length === 0 ? (
+                <div className="text-center text-slate-400 text-xs py-8">
+                  <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p>Nenhuma mensagem ainda. Inicie a conversa!</p>
+                </div>
+              ) : chatMessages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.senderRole === 'teacher' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-xs font-medium shadow-sm ${
+                    msg.senderRole === 'teacher'
+                      ? 'bg-[#102A43] text-white rounded-br-none'
+                      : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
+                  }`}>
+                    <p>{msg.message}</p>
+                    <p className={`text-[9px] mt-1 ${ msg.senderRole === 'teacher' ? 'text-white/60' : 'text-slate-400' }`}>
+                      {new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="border-t border-slate-100 p-3 flex gap-2 shrink-0 bg-white">
+              <input
+                type="text"
+                placeholder="Digite sua mensagem..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendChatMessage()}
+                className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 bg-slate-50 focus:bg-white"
+              />
+              <button
+                onClick={handleSendChatMessage}
+                disabled={chatSending || !chatInput.trim()}
+                className="p-2.5 bg-[#102A43] text-white rounded-xl hover:opacity-90 transition disabled:opacity-40 cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}

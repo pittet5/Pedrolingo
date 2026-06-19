@@ -285,6 +285,8 @@ export default function App() {
             courses={courses}
             submissions={submissions}
             assignments={assignments}
+            teacherId={currentProfile.id}
+            teacherName={currentProfile.name}
             onAddCourse={handleAddCourse}
             onGradeSubmission={handleGradeSubmission}
             onSelectCourse={setSelectedCourse}
