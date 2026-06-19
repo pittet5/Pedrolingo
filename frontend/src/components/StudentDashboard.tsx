@@ -435,7 +435,7 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
       {/* Welcome Title */}
       <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-white/10 pb-5">
         <h2 className="text-3xl font-extrabold text-[#102A43] dark:text-white tracking-tight">Bem-vindo de volta, {studentName}!</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Você dominou 3 novas competências linguísticas esta semana. Continue assim!</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Você dominou 3 novas competências esta semana. Continue assim!</p>
       </div>
 
       {/* Learning Milestone & Continue Card Grid */}
@@ -757,11 +757,10 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
                       </div>
                     ) : chatMessages.map((msg) => (
                       <div key={msg.id} className={`flex ${msg.senderRole === 'student' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-xs font-medium shadow-sm ${
-                          msg.senderRole === 'student'
+                        <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-xs font-medium shadow-sm ${msg.senderRole === 'student'
                             ? 'bg-indigo-600 text-white rounded-br-none'
                             : 'bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white rounded-bl-none'
-                        }`}>
+                          }`}>
                           <p>{msg.message}</p>
                           <p className={`text-[9px] mt-0.5 ${msg.senderRole === 'student' ? 'text-white/60' : 'text-slate-400'}`}>
                             {new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -844,9 +843,9 @@ export default function StudentDashboard({ studentName, studentId, studentEmail,
               )}
 
               {getCourseCompletedAssignments(selectedCourse.id).length === 0 &&
-               getCoursePendingAssignments(selectedCourse.id).length === 0 && (
-                <p className="text-xs text-slate-400 text-center py-4">Nenhuma atividade cadastrada neste curso ainda.</p>
-              )}
+                getCoursePendingAssignments(selectedCourse.id).length === 0 && (
+                  <p className="text-xs text-slate-400 text-center py-4">Nenhuma atividade cadastrada neste curso ainda.</p>
+                )}
             </div>
           </div>
         </div>
