@@ -1,4 +1,4 @@
-[Readme Pedrolingo.md](https://github.com/user-attachments/files/29117766/Readme.Pedrolingo.md)
+[Readme Pedrolingo.md](https://github.com/user-attachments/files/29117788/Readme.Pedrolingo.md)
 # 🎓 Pedrolingo
 
 > Plataforma de aprendizado inteligente de idiomas com painéis interativos para Professores e Alunos, gerenciamento de cursos, atribuição de notas e um Co-Pilot de IA integrado.
@@ -38,42 +38,16 @@ A plataforma resolve a fragmentação de ferramentas no ensino de idiomas — re
 
 ---
 
-## 🚀 Como Rodar Localmente
+## 🌐 Acesse a Plataforma
 
-### Pré-requisitos
-- Node.js 18+
-- npm 9+
-- Conta no [Supabase](https://supabase.com)
-- Chave de API do [Google Gemini](https://ai.google.dev)
+O Pedrolingo está disponível online — nenhuma instalação necessária!
 
-### 1. Clone o repositório
-```bash
-git clone https://github.com/pittet5/Pedrolingo.git
-cd Pedrolingo
-```
+👉 **[pedrolingo.vercel.app](https://pedrolingo.vercel.app)**
 
-### 2. Configure as variáveis de ambiente
-Crie um arquivo `.env` na raiz do projeto:
-```env
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-GEMINI_API_KEY=your_gemini_api_key
-SMTP_USER=your_gmail@gmail.com
-SMTP_PASS=your_gmail_app_password
-```
-
-### 3. Execute a migration no Supabase
-Acesse o **SQL Editor** do seu projeto no Supabase e execute o conteúdo do arquivo `supabase_migration.sql`.
-
-### 4. Instale as dependências e rode
-```bash
-npm install
-npm run dev
-```
-
-O frontend estará em `http://localhost:5173` e o backend em `http://localhost:3000`.
-
----
+1. Acesse o link acima
+2. Crie sua conta como **Professor** ou **Aluno**
+3. Verifique seu e-mail com o código enviado
+4. Comece a usar!
 
 ## 🏗️ Estrutura do Projeto
 
